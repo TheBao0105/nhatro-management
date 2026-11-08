@@ -41,22 +41,27 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
     final propertyProvider = Provider.of<PropertyProvider>(context);
     final auth = Provider.of<AuthProvider>(context);
     final user = auth.user;
+    final canAdd = user != null && (user.isLandlord || user.isAdmin);
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Quản Lý Nhà Trọ', style: TextStyle(fontWeight: FontWeight.w700)),
             Text(
-              'SERVICE 2 — Property & Room Management',
-              style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+              'Quản Lý Nhà Trọ',
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+            ),
+            Text(
+              'SPRINT 1: Property & Room Management',
+              style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
             ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh_rounded),
             onPressed: () => propertyProvider.fetchProperties(),
             tooltip: 'Làm mới',
           ),
@@ -64,7 +69,7 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
       ),
       body: Column(
         children: [
-          // Search & Filter header
+          // Search Bar
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             color: Colors.white,
@@ -76,7 +81,7 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
                     onSubmitted: _onSearch,
                     decoration: InputDecoration(
                       hintText: 'Tìm kiếm theo tên nhà trọ, địa chỉ...',
-                      prefixIcon: const Icon(Icons.search, size: 20),
+                      prefixIcon: const Icon(Icons.search_rounded, size: 20, color: Color(0xFF64748B)),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
                               icon: const Icon(Icons.clear, size: 18),
@@ -86,14 +91,19 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
                               },
                             )
                           : null,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 11, horizontal: 14),
                       fillColor: const Color(0xFFF8FAFC),
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 IconButton.filledTonal(
-                  icon: const Icon(Icons.search),
+                  style: IconButton.styleFrom(
+                    backgroundColor: const Color(0xFFEFF6FF),
+                    foregroundColor: const Color(0xFF2563EB),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: const Icon(Icons.search_rounded),
                   onPressed: () => _onSearch(_searchController.text),
                 ),
               ],
@@ -111,15 +121,31 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.apartment_outlined, size: 64, color: Colors.grey.shade400),
-                                const SizedBox(height: 12),
+                                Container(
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                                  ),
+                                  child: const Icon(
+                                    Icons.apartment_rounded,
+                                    size: 48,
+                                    color: Color(0xFF94A3B8),
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
                                 const Text(
                                   'Chưa có nhà trọ nào',
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF334155),
+                                  ),
                                 ),
                                 const SizedBox(height: 6),
                                 const Text(
-                                  'Bấm dấu (+) bên dưới để tạo nhà trọ đầu tiên',
+                                  'Bấm nút (+) bên dưới để tạo nhà trọ đầu tiên',
                                   style: TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
                                 ),
                               ],
@@ -130,31 +156,46 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
                             itemCount: propertyProvider.properties.length,
                             itemBuilder: (context, index) {
                               final property = propertyProvider.properties[index];
-                              return _buildPropertyCard(context, property);
+                              return _buildPropertyCard(context, property, canAdd);
                             },
                           ),
                   ),
           ),
         ],
       ),
-      floatingActionButton: (user != null && (user.isLandlord || user.isAdmin))
+      floatingActionButton: canAdd
           ? FloatingActionButton.extended(
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const PropertyFormScreen()),
                 );
               },
-              backgroundColor: AppTheme.primary,
-              icon: const Icon(Icons.add, color: Colors.white),
-              label: const Text('Thêm nhà trọ', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              backgroundColor: const Color(0xFF2563EB),
+              icon: const Icon(Icons.add_rounded, color: Colors.white),
+              label: const Text(
+                'Thêm nhà trọ',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+              ),
             )
           : null,
     );
   }
 
-  Widget _buildPropertyCard(BuildContext context, PropertyModel property) {
-    return Card(
+  Widget _buildPropertyCard(BuildContext context, PropertyModel property, bool canEdit) {
+    return Container(
       margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () {
@@ -167,16 +208,13 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top Banner or Image
+            // Top Banner
             Container(
-              height: 110,
+              height: 100,
               width: double.infinity,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    AppTheme.primary.withOpacity(0.85),
-                    const Color(0xFF2563EB),
-                  ],
+                  colors: [Color(0xFF1E293B), Color(0xFF2563EB)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -184,11 +222,11 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
               child: Stack(
                 children: [
                   Positioned(
-                    right: -20,
-                    bottom: -20,
+                    right: -15,
+                    bottom: -15,
                     child: Icon(
                       Icons.apartment_rounded,
-                      size: 130,
+                      size: 110,
                       color: Colors.white.withOpacity(0.12),
                     ),
                   ),
@@ -202,28 +240,32 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                               decoration: BoxDecoration(
                                 color: Colors.white.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
                                 '${property.totalFloors} Tầng',
-                                style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.9),
+                                color: Colors.white,
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
                                 '${property.totalRoomsCount} Phòng',
                                 style: const TextStyle(
-                                  color: AppTheme.primary,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF1E293B),
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w800,
                                 ),
                               ),
                             ),
@@ -233,8 +275,9 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
                           property.name,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.2,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -256,12 +299,12 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.location_on_outlined, size: 18, color: Color(0xFF64748B)),
+                      const Icon(Icons.location_on_outlined, size: 17, color: Color(0xFF64748B)),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           property.fullAddress ?? property.address,
-                          style: const TextStyle(fontSize: 13.5, color: Color(0xFF475569)),
+                          style: const TextStyle(fontSize: 13, color: Color(0xFF475569), fontWeight: FontWeight.w500),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -272,20 +315,20 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
 
                   // Room Stats Breakdown
                   Container(
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: const Color(0xFFE2E8F0)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildStatItem('Còn trống', '${property.availableRoomsCount}', AppTheme.statusAvailable),
-                        Container(height: 24, width: 1, color: const Color(0xFFE2E8F0)),
-                        _buildStatItem('Đang thuê', '${property.occupiedRoomsCount}', AppTheme.statusOccupied),
-                        Container(height: 24, width: 1, color: const Color(0xFFE2E8F0)),
-                        _buildStatItem(
+                        _buildStatCol('Còn trống', '${property.availableRoomsCount}', AppTheme.statusAvailable),
+                        Container(height: 22, width: 1, color: const Color(0xFFE2E8F0)),
+                        _buildStatCol('Đang thuê', '${property.occupiedRoomsCount}', AppTheme.statusOccupied),
+                        Container(height: 22, width: 1, color: const Color(0xFFE2E8F0)),
+                        _buildStatCol(
                           'Điện / Nước',
                           '${Formatters.formatCurrency(property.electricityRate)} / ${Formatters.formatCurrency(property.waterRate)}',
                           const Color(0xFF2563EB),
@@ -303,17 +346,17 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
     );
   }
 
-  Widget _buildStatItem(String label, String value, Color color, {double fontSize = 14}) {
+  Widget _buildStatCol(String label, String value, Color color, {double fontSize = 13.5}) {
     return Column(
       children: [
         Text(
           value,
-          style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w700, color: color),
+          style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w800, color: color),
         ),
         const SizedBox(height: 2),
         Text(
           label,
-          style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+          style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
         ),
       ],
     );

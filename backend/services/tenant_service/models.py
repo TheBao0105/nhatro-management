@@ -1,26 +1,13 @@
 from django.db import models
-from django.conf import settings
-from services.property_service.models import Room
 
 class TenantProfile(models.Model):
     """
-    SERVICE 3 — TENANT SERVICE (Sẵn sàng cho Sprint 2)
-    Hồ sơ chi tiết của khách thuê trọ
+    SERVICE 3 — TENANT SERVICE (Lộ trình hoàn thành trong Sprint 2)
+    Hồ sơ chi tiết của khách thuê trọ.
+    Kiến trúc SOA: Lưu user_id và room_id dạng số nguyên, không dùng Foreign Key chéo service.
     """
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='tenant_profile',
-        verbose_name='Tài khoản người dùng'
-    )
-    current_room = models.ForeignKey(
-        Room,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='current_tenants',
-        verbose_name='Phòng đang ở'
-    )
+    user_id = models.IntegerField(unique=True, verbose_name='ID Tài khoản (Identity Service)')
+    room_id = models.IntegerField(null=True, blank=True, verbose_name='ID Phòng (Property Service)')
     birth_date = models.DateField(null=True, blank=True, verbose_name='Ngày sinh')
     gender = models.CharField(max_length=10, blank=True, null=True, verbose_name='Giới tính')
     hometown = models.CharField(max_length=150, blank=True, null=True, verbose_name='Quê quán')
@@ -37,5 +24,4 @@ class TenantProfile(models.Model):
         verbose_name_plural = 'Danh sách Hồ sơ người thuê'
 
     def __str__(self):
-        return f"Khách thuê: {self.user.full_name} ({self.user.phone_number})"
-
+        return f"Hồ sơ khách thuê User ID #{self.user_id}"

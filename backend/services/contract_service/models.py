@@ -1,6 +1,4 @@
 from django.db import models
-from django.conf import settings
-from services.property_service.models import Room
 
 class ContractStatus(models.TextChoices):
     DRAFT = 'DRAFT', 'Bản nháp'
@@ -12,21 +10,22 @@ class ContractStatus(models.TextChoices):
 
 class Contract(models.Model):
     """
-    SERVICE 4 — CONTRACT SERVICE (Sẵn sàng cho Sprint 2)
-    Hợp đồng thuê trọ
+    SERVICE 4 — CONTRACT SERVICE (Lộ trình hoàn thành trong Sprint 2)
+    Hợp đồng thuê trọ.
+    Kiến trúc SOA: Loose coupling lưu room_id, landlord_id, tenant_id.
     """
     contract_number = models.CharField(max_length=50, unique=True, verbose_name='Mã hợp đồng')
-    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='contracts', verbose_name='Phòng thuê')
-    landlord = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='landlord_contracts')
-    tenant = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='tenant_contracts')
-    
+    room_id = models.IntegerField(verbose_name='ID Phòng (Property Service)')
+    landlord_id = models.IntegerField(verbose_name='ID Chủ trọ (Identity Service)')
+    tenant_id = models.IntegerField(verbose_name='ID Khách thuê (Identity Service)')
+
     start_date = models.DateField(verbose_name='Ngày bắt đầu thuê')
     end_date = models.DateField(verbose_name='Ngày kết thúc hợp đồng')
-    
+
     rental_price = models.DecimalField(max_digits=12, decimal_places=2, verbose_name='Giá thuê hàng tháng (VNĐ)')
     deposit_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.0, verbose_name='Tiền cọc giữ chỗ (VNĐ)')
     billing_day_of_month = models.PositiveIntegerField(default=5, verbose_name='Ngày thu tiền hàng tháng')
-    
+
     status = models.CharField(
         max_length=20,
         choices=ContractStatus.choices,
@@ -45,5 +44,4 @@ class Contract(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"HĐ {self.contract_number} - {self.room} ({self.tenant.full_name})"
-
+        return f"HĐ {self.contract_number} (Phòng ID #{self.room_id})"

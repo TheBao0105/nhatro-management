@@ -105,14 +105,14 @@ class _RoomFormScreenState extends State<RoomFormScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(isEdit ? 'Đã cập nhật phòng thành công' : 'Đã thêm phòng mới thành công!'),
-          backgroundColor: Colors.green,
+          backgroundColor: const Color(0xFF16A34A),
         ),
       );
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(provider.errorMessage ?? 'Thao tác thất bại'),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: const Color(0xFFDC2626),
         ),
       );
     }
@@ -123,10 +123,11 @@ class _RoomFormScreenState extends State<RoomFormScreen> {
     final provider = Provider.of<PropertyProvider>(context);
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: Text(
           isEdit ? 'Chỉnh Sửa Phòng ${widget.room!.roomNumber}' : 'Thêm Phòng Mới',
-          style: const TextStyle(fontWeight: FontWeight.w700),
+          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
         ),
       ),
       body: SingleChildScrollView(
@@ -136,177 +137,197 @@ class _RoomFormScreenState extends State<RoomFormScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Thông tin định danh & Vị trí',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: CustomTextField(
-                              controller: _roomNumberController,
-                              label: 'Mã / Số phòng *',
-                              hint: 'VD: 101, 202',
-                              prefixIcon: Icons.door_front_door_outlined,
-                              validator: (v) => (v == null || v.isEmpty) ? 'Nhập số phòng' : null,
-                            ),
+              // Thông tin định danh & vị trí
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Thông tin định danh & Vị trí',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CustomTextField(
+                            controller: _roomNumberController,
+                            label: 'Mã / Số phòng *',
+                            hint: 'VD: 101, 202',
+                            prefixIcon: Icons.door_front_door_outlined,
+                            validator: (v) => (v == null || v.isEmpty) ? 'Nhập số phòng' : null,
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: CustomTextField(
-                              controller: _floorController,
-                              label: 'Tầng số *',
-                              hint: 'VD: 1, 2',
-                              keyboardType: TextInputType.number,
-                              prefixIcon: Icons.layers_outlined,
-                              validator: (v) => (v == null || v.isEmpty) ? 'Nhập tầng' : null,
-                            ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: CustomTextField(
+                            controller: _floorController,
+                            label: 'Tầng số *',
+                            hint: 'VD: 1, 2',
+                            keyboardType: TextInputType.number,
+                            prefixIcon: Icons.layers_outlined,
+                            validator: (v) => (v == null || v.isEmpty) ? 'Nhập tầng' : null,
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: CustomTextField(
-                              controller: _areaController,
-                              label: 'Diện tích (m²)',
-                              hint: '25.0',
-                              keyboardType: TextInputType.number,
-                              prefixIcon: Icons.square_foot_outlined,
-                            ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CustomTextField(
+                            controller: _areaController,
+                            label: 'Diện tích (m²)',
+                            hint: '25.0',
+                            keyboardType: TextInputType.number,
+                            prefixIcon: Icons.square_foot_rounded,
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: CustomTextField(
-                              controller: _maxOccupantsController,
-                              label: 'Số người ở tối đa',
-                              hint: '2',
-                              keyboardType: TextInputType.number,
-                              prefixIcon: Icons.people_outline,
-                            ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: CustomTextField(
+                            controller: _maxOccupantsController,
+                            label: 'Số người tối đa',
+                            hint: '2',
+                            keyboardType: TextInputType.number,
+                            prefixIcon: Icons.people_outline_rounded,
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
 
               const SizedBox(height: 16),
 
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Giá thuê & Tiền đặt cọc',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              // Giá thuê & Tiền cọc
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Giá thuê & Tiền cọc',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                    ),
+                    const SizedBox(height: 14),
+                    CustomTextField(
+                      controller: _rentPriceController,
+                      label: 'Giá thuê hàng tháng (VNĐ) *',
+                      hint: '3500000',
+                      keyboardType: TextInputType.number,
+                      prefixIcon: Icons.attach_money_rounded,
+                      validator: (v) => (v == null || v.isEmpty) ? 'Nhập giá thuê' : null,
+                    ),
+                    const SizedBox(height: 14),
+                    CustomTextField(
+                      controller: _depositController,
+                      label: 'Tiền đặt cọc (VNĐ)',
+                      hint: '3500000',
+                      keyboardType: TextInputType.number,
+                      prefixIcon: Icons.account_balance_wallet_outlined,
+                    ),
+                    const SizedBox(height: 14),
+                    const Text(
+                      'Trạng thái phòng',
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF334155),
                       ),
-                      const SizedBox(height: 14),
-                      CustomTextField(
-                        controller: _rentPriceController,
-                        label: 'Giá thuê phòng (VNĐ/tháng) *',
-                        hint: '3500000',
-                        keyboardType: TextInputType.number,
-                        prefixIcon: Icons.attach_money,
-                        validator: (v) => (v == null || v.isEmpty) ? 'Nhập giá thuê' : null,
-                      ),
-                      const SizedBox(height: 14),
-                      CustomTextField(
-                        controller: _depositController,
-                        label: 'Tiền đặt cọc phòng (VNĐ)',
-                        hint: '3500000',
-                        keyboardType: TextInputType.number,
-                        prefixIcon: Icons.account_balance_wallet_outlined,
-                      ),
-                      const SizedBox(height: 14),
-                      const Text(
-                        'Trạng thái phòng',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF334155),
+                    ),
+                    const SizedBox(height: 7),
+                    DropdownButtonFormField<String>(
+                      initialValue: _status,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      DropdownButtonFormField<String>(
-                        initialValue: _status,
-                        decoration: const InputDecoration(),
-                        items: const [
-                          DropdownMenuItem(value: 'AVAILABLE', child: Text('Còn trống (AVAILABLE)')),
-                          DropdownMenuItem(value: 'OCCUPIED', child: Text('Đang thuê (OCCUPIED)')),
-                          DropdownMenuItem(value: 'RESERVED', child: Text('Đã cọc giữ chỗ (RESERVED)')),
-                          DropdownMenuItem(value: 'MAINTENANCE', child: Text('Đang sửa chữa (MAINTENANCE)')),
-                        ],
-                        onChanged: (val) {
-                          if (val != null) setState(() => _status = val);
-                        },
-                      ),
-                    ],
-                  ),
+                      items: const [
+                        DropdownMenuItem(value: 'AVAILABLE', child: Text('Còn trống (AVAILABLE)')),
+                        DropdownMenuItem(value: 'OCCUPIED', child: Text('Đang thuê (OCCUPIED)')),
+                        DropdownMenuItem(value: 'RESERVED', child: Text('Đã cọc giữ chỗ (RESERVED)')),
+                        DropdownMenuItem(value: 'MAINTENANCE', child: Text('Đang sửa chữa (MAINTENANCE)')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) setState(() => _status = val);
+                      },
+                    ),
+                  ],
                 ),
               ),
 
               const SizedBox(height: 16),
 
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Tiện nghi & Chỉ số đồng hồ',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 14),
-                      CustomTextField(
-                        controller: _amenitiesController,
-                        label: 'Tiện nghi phòng',
-                        hint: 'VD: Máy lạnh Inverter, Gác lửng, Kệ bếp, Tủ lạnh...',
-                        maxLines: 2,
-                      ),
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: CustomTextField(
-                              controller: _electricReadingController,
-                              label: 'Điện ban đầu (kWh)',
-                              keyboardType: TextInputType.number,
-                              prefixIcon: Icons.electric_bolt,
-                            ),
+              // Tiện nghi & Đồng hồ
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Tiện nghi & Chỉ số ban đầu',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                    ),
+                    const SizedBox(height: 14),
+                    CustomTextField(
+                      controller: _amenitiesController,
+                      label: 'Tiện nghi phòng',
+                      hint: 'VD: Máy lạnh Inverter, Gác lửng, Kệ bếp, Tủ lạnh...',
+                      maxLines: 2,
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CustomTextField(
+                            controller: _electricReadingController,
+                            label: 'Điện ban đầu (kWh)',
+                            keyboardType: TextInputType.number,
+                            prefixIcon: Icons.electric_bolt_rounded,
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: CustomTextField(
-                              controller: _waterReadingController,
-                              label: 'Nước ban đầu (m³)',
-                              keyboardType: TextInputType.number,
-                              prefixIcon: Icons.water_drop,
-                            ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: CustomTextField(
+                            controller: _waterReadingController,
+                            label: 'Nước ban đầu (m³)',
+                            keyboardType: TextInputType.number,
+                            prefixIcon: Icons.water_drop_rounded,
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      CustomTextField(
-                        controller: _descController,
-                        label: 'Mô tả / Ghi chú thêm',
-                        hint: 'Ghi chú về tình trạng chìa khóa, hiện trạng phòng...',
-                        maxLines: 2,
-                      ),
-                    ],
-                  ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    CustomTextField(
+                      controller: _descController,
+                      label: 'Ghi chú thêm',
+                      hint: 'Ghi chú về tình trạng chìa khóa, hiện trạng phòng...',
+                      maxLines: 2,
+                    ),
+                  ],
                 ),
               ),
 
@@ -314,6 +335,10 @@ class _RoomFormScreenState extends State<RoomFormScreen> {
 
               ElevatedButton(
                 onPressed: provider.isLoading ? null : _handleSave,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2563EB),
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                ),
                 child: provider.isLoading
                     ? const SizedBox(
                         height: 20,

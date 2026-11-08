@@ -4,20 +4,22 @@ from rest_framework import permissions
 
 class BillingServiceStatusView(APIView):
     """
-    SERVICE 5 — BILLING & NOTIFICATION SERVICE: Giới thiệu dịch vụ
+    SERVICE 5 — BILLING & NOTIFICATION SERVICE:
+    Thông báo trạng thái hoàn thành trong Sprint tiếp theo (Sprint 3)
     """
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         return Response({
-            'service': 'SERVICE 5 — BILLING & NOTIFICATION SERVICE',
-            'status': 'READY_FOR_SPRINT_3',
+            'service_name': 'SERVICE 5 — BILLING & NOTIFICATION SERVICE',
+            'status': 'PLANNED_SPRINT_3',
             'sprint': 'Sprint 3 — Billing, Payments & Notification',
+            'message': 'Dịch vụ này được lên lịch hoàn thành trong Sprint 3 tiếp theo.',
+            'database': 'nhatro_billing_db',
             'planned_features': [
-                'Tính hóa đơn tiền phòng, tiền điện, tiền nước tự động',
-                'Quản lý trạng thái thanh toán (Chưa trả, Đã thanh toán, Quá hạn)',
-                'Tạo mã QR VietQR chuyển khoản ngân hàng tự động',
-                'Gửi thông báo đẩy và email nhắc hạn đóng tiền',
+                'Tính tiền điện, nước tự động theo chỉ số công tơ tháng',
+                'Tạo mã thanh toán VietQR ngân hàng kèm nội dung tự động',
+                'Quản lý trạng thái phiếu thu / hóa đơn (Chưa thanh toán, Đã thanh toán, Quá hạn)',
+                'Gửi thông báo nhắc tiền phòng qua Email / App Push Notification',
             ]
         })
-
