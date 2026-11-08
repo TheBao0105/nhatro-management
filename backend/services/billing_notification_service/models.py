@@ -1,7 +1,4 @@
 from django.db import models
-from django.conf import settings
-from services.property_service.models import Room
-from services.contract_service.models import Contract
 
 class InvoiceStatus(models.TextChoices):
     UNPAID = 'UNPAID', 'Chưa thanh toán'
@@ -12,12 +9,13 @@ class InvoiceStatus(models.TextChoices):
 
 class Invoice(models.Model):
     """
-    SERVICE 5 — BILLING SERVICE (Sẵn sàng cho Sprint 3)
-    Hóa đơn tiền phòng và dịch vụ điện nước
+    SERVICE 5 — BILLING SERVICE (Lộ trình hoàn thành trong Sprint 3)
+    Hóa đơn tiền phòng và điện nước.
+    Kiến trúc SOA: Loose coupling lưu room_id và contract_id.
     """
     invoice_code = models.CharField(max_length=50, unique=True, verbose_name='Mã hóa đơn')
-    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='invoices')
-    contract = models.ForeignKey(Contract, on_delete=models.CASCADE, related_name='invoices', null=True, blank=True)
+    room_id = models.IntegerField(verbose_name='ID Phòng (Property Service)')
+    contract_id = models.IntegerField(null=True, blank=True, verbose_name='ID Hợp đồng (Contract Service)')
     billing_month = models.PositiveIntegerField(verbose_name='Tháng')
     billing_year = models.PositiveIntegerField(verbose_name='Năm')
 
@@ -51,15 +49,16 @@ class Invoice(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"Hóa đơn {self.invoice_code} - Phòng {self.room.room_number} (T{self.billing_month}/{self.billing_year})"
+        return f"Hóa đơn {self.invoice_code} - Phòng ID #{self.room_id} (T{self.billing_month}/{self.billing_year})"
 
 
 class Notification(models.Model):
     """
     SERVICE 5 — NOTIFICATION SERVICE
-    Hệ thống thông báo đẩy tới người dùng
+    Hệ thống thông báo gửi tới người dùng.
+    Kiến trúc SOA: Loose coupling lưu user_id.
     """
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
+    user_id = models.IntegerField(verbose_name='ID Người nhận (Identity Service)')
     title = models.CharField(max_length=200, verbose_name='Tiêu đề thông báo')
     content = models.TextField(verbose_name='Nội dung thông báo')
     is_read = models.BooleanField(default=False, verbose_name='Đã xem')
@@ -71,5 +70,4 @@ class Notification(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"Thông báo: {self.title} -> {self.user.username}"
-
+        return f"Thông báo: {self.title} -> User ID #{self.user_id}"

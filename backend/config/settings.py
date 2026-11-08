@@ -29,7 +29,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'drf_spectacular',
 
-    # Services
+    # SOA Services (Mỗi service là 1 bounded context riêng biệt)
     'services.identity_service',
     'services.property_service',
     'services.tenant_service',
@@ -68,7 +68,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# Database Configuration (SQL Server via mssql-django or SQLite fallback)
+# ==============================================================================
+# SOA DATABASE CONFIGURATION (Database per Service)
+# ==============================================================================
 DB_ENGINE = os.getenv('DB_ENGINE', 'mssql').lower()
 
 if DB_ENGINE == 'mssql':
@@ -77,10 +79,10 @@ if DB_ENGINE == 'mssql':
     if db_trusted:
         extra_params += 'Trusted_Connection=yes;'
 
-    DATABASES = {
-        'default': {
+    def _mssql_db_config(db_name_env, default_name):
+        return {
             'ENGINE': 'mssql',
-            'NAME': os.getenv('DB_NAME', 'nhatro_db'),
+            'NAME': os.getenv(db_name_env, default_name),
             'HOST': os.getenv('DB_SERVER', r'.\SQLEXPRESS'),
             'PORT': os.getenv('DB_PORT', ''),
             'USER': os.getenv('DB_USER', ''),
@@ -90,32 +92,50 @@ if DB_ENGINE == 'mssql':
                 'extra_params': extra_params,
             },
         }
+
+    DATABASES = {
+        'default': _mssql_db_config('DB_NAME_IDENTITY', 'nhatro_identity_db'),
+        'property_db': _mssql_db_config('DB_NAME_PROPERTY', 'nhatro_property_db'),
+        'tenant_db': _mssql_db_config('DB_NAME_TENANT', 'nhatro_tenant_db'),
+        'contract_db': _mssql_db_config('DB_NAME_CONTRACT', 'nhatro_contract_db'),
+        'billing_db': _mssql_db_config('DB_NAME_BILLING', 'nhatro_billing_db'),
     }
 else:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
+            'NAME': BASE_DIR / 'db_identity.sqlite3',
+        },
+        'property_db': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db_property.sqlite3',
+        },
+        'tenant_db': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db_tenant.sqlite3',
+        },
+        'contract_db': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db_contract.sqlite3',
+        },
+        'billing_db': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db_billing.sqlite3',
+        },
     }
 
-# Custom User Model
+# SOA Database Router
+DATABASE_ROUTERS = ['config.db_router.ServiceDatabaseRouter']
+
+# Custom User Model (Nằm trong Identity Service)
 AUTH_USER_MODEL = 'identity_service.User'
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
 # Internationalization
@@ -154,15 +174,14 @@ SIMPLE_JWT = {
     'USER_ID_CLAIM': 'user_id',
 }
 
-# CORS Configuration (allows frontend to talk to backend)
+# CORS Configuration
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
 # OpenAPI / Swagger
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'Quản Lý Nhà Trọ API - Microservices Architecture',
-    'DESCRIPTION': 'Sprint 1: Identity Service (Auth & RBAC) and Property Service (House & Room Management)',
+    'TITLE': 'Quản Lý Nhà Trọ API - SOA Microservices Architecture',
+    'DESCRIPTION': 'Sprint 1: Identity Service (Auth & RBAC), Property Service (House & Room Management)',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
 }
-

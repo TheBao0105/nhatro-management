@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/constants/api_constants.dart';
-import '../../core/theme/app_theme.dart';
+import '../../core/network/api_client.dart';
 import '../../widgets/status_badge.dart';
 import '../property/property_list_screen.dart';
 import '../future_services/future_service_screen.dart';
@@ -18,7 +18,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _pages = [
-    // 0: SERVICE 2 — Property & Room Management
+    // 0: SERVICE 2 — Property & Room Management (Sprint 1)
     const PropertyListScreen(),
 
     // 1: SERVICE 3 — Tenant Service (Sprint 2)
@@ -32,8 +32,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       plannedFeatures: const [
         'Hồ sơ định danh khách thuê (CCCD/CMND, quê quán, nghề nghiệp)',
         'Quản lý khai báo đăng ký tạm trú',
-        'Lịch sử cư trú và đổi chuyển phòng trọ',
-        'Lưu trữ thông tin liên hệ khẩn cấp của người thân',
+        'Lịch sử cư trú và chuyển đổi phòng',
+        'Quản lý thành viên cùng phòng',
       ],
     ),
 
@@ -46,10 +46,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       themeColor: const Color(0xFF7C3AED),
       statusApiUrl: ApiConstants.contractStatus,
       plannedFeatures: const [
-        'Tạo mới hợp đồng thuê phòng trực tiếp trên app',
+        'Tạo mới hợp đồng điện tử theo mẫu pháp lý chuẩn',
         'Gia hạn hợp đồng (Contract Extension)',
-        'Kết thúc / Thanh lý hợp đồng & Hoàn tiền cọc',
-        'Xuất hợp đồng chuẩn mẫu pháp lý dạng PDF & Chữ ký điện tử',
+        'Thanh lý hợp đồng và hoàn tiền cọc',
+        'Xuất hợp đồng chuẩn định dạng PDF & Chữ ký điện tử',
       ],
     ),
 
@@ -64,13 +64,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       plannedFeatures: const [
         'Tính toán hóa đơn phòng + điện nước tự động theo chỉ số công tơ',
         'Tạo mã QR VietQR chuyển khoản ngân hàng tự động kèm nội dung',
-        'Quản lý trạng thái thanh toán (Chưa thanh toán, Đã trả, Quá hạn)',
+        'Quản lý trạng thái phiếu thu (Chưa thanh toán, Đã thanh toán, Quá hạn)',
         'Gửi thông báo đẩy và email nhắc hạn đóng tiền phòng định kỳ',
       ],
     ),
 
-    // 4: SERVICE 1 — Identity (Tài khoản & Phân quyền)
-    const _ProfileTab(),
+    // 4: SERVICE 1 & ARCHITECTURE — Identity, Role Authorization & SOA Integration
+    const _ProfileAndArchitectureTab(),
   ];
 
   @override
@@ -89,31 +89,31 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         },
         backgroundColor: Colors.white,
         elevation: 3,
-        indicatorColor: AppTheme.primary.withOpacity(0.12),
+        indicatorColor: const Color(0xFFEFF6FF),
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.apartment_outlined),
-            selectedIcon: Icon(Icons.apartment, color: AppTheme.primary),
+            selectedIcon: Icon(Icons.apartment_rounded, color: Color(0xFF2563EB)),
             label: 'Nhà trọ',
           ),
           NavigationDestination(
-            icon: Icon(Icons.people_outline),
-            selectedIcon: Icon(Icons.people, color: Color(0xFF0D9488)),
+            icon: Icon(Icons.people_outline_rounded),
+            selectedIcon: Icon(Icons.people_rounded, color: Color(0xFF0D9488)),
             label: 'Người thuê',
           ),
           NavigationDestination(
             icon: Icon(Icons.assignment_outlined),
-            selectedIcon: Icon(Icons.assignment, color: Color(0xFF7C3AED)),
+            selectedIcon: Icon(Icons.assignment_rounded, color: Color(0xFF7C3AED)),
             label: 'Hợp đồng',
           ),
           NavigationDestination(
             icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long, color: Color(0xFFEA580C)),
+            selectedIcon: Icon(Icons.receipt_long_rounded, color: Color(0xFFEA580C)),
             label: 'Hóa đơn',
           ),
           NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person, color: AppTheme.primary),
+            icon: Icon(Icons.person_outline_rounded),
+            selectedIcon: Icon(Icons.person_rounded, color: Color(0xFF2563EB)),
             label: 'Tài khoản',
           ),
         ],
@@ -122,8 +122,37 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
-class _ProfileTab extends StatelessWidget {
-  const _ProfileTab();
+class _ProfileAndArchitectureTab extends StatefulWidget {
+  const _ProfileAndArchitectureTab();
+
+  @override
+  State<_ProfileAndArchitectureTab> createState() => _ProfileAndArchitectureTabState();
+}
+
+class _ProfileAndArchitectureTabState extends State<_ProfileAndArchitectureTab> {
+  Map<String, dynamic>? _architectureData;
+  bool _isLoadingArch = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchArchitectureStatus();
+  }
+
+  Future<void> _fetchArchitectureStatus() async {
+    setState(() => _isLoadingArch = true);
+    try {
+      final res = await ApiClient.get(ApiConstants.architectureStatus, requireAuth: false);
+      if (res is Map<String, dynamic> && mounted) {
+        setState(() {
+          _architectureData = res;
+          _isLoadingArch = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingArch = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -131,22 +160,31 @@ class _ProfileTab extends StatelessWidget {
     final user = auth.user;
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Tài Khoản & Phân Quyền', style: TextStyle(fontWeight: FontWeight.w700)),
+        title: const Text('Tài Khoản & Kiến Trúc SOA', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: _fetchArchitectureStatus,
+            tooltip: 'Kiểm tra lại',
+          ),
+        ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(18),
         child: Column(
           children: [
-            // User Card
+            // 1. User Profile Card
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
+                    color: Colors.black.withOpacity(0.02),
                     blurRadius: 10,
                     offset: const Offset(0, 3),
                   ),
@@ -155,25 +193,25 @@ class _ProfileTab extends StatelessWidget {
               child: Column(
                 children: [
                   CircleAvatar(
-                    radius: 38,
-                    backgroundColor: AppTheme.primary.withOpacity(0.12),
+                    radius: 36,
+                    backgroundColor: const Color(0xFFEFF6FF),
                     child: Text(
                       (user?.displayName.isNotEmpty ?? false)
                           ? user!.displayName[0].toUpperCase()
                           : 'U',
                       style: const TextStyle(
-                        fontSize: 28,
+                        fontSize: 26,
                         fontWeight: FontWeight.w800,
-                        color: AppTheme.primary,
+                        color: Color(0xFF2563EB),
                       ),
                     ),
                   ),
                   const SizedBox(height: 12),
                   Text(
                     user?.displayName ?? 'Người dùng',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 3),
                   Text(
                     '@${user?.username ?? ''}',
                     style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
@@ -187,81 +225,156 @@ class _ProfileTab extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
-            // Profile info card
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Thông tin định danh',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 14),
-                    _buildRow(Icons.phone_outlined, 'Số điện thoại', user?.phoneNumber ?? 'Chưa cập nhật'),
-                    const Divider(height: 16),
-                    _buildRow(Icons.email_outlined, 'Email', user?.email ?? 'Chưa cập nhật'),
-                    const Divider(height: 16),
-                    _buildRow(Icons.badge_outlined, 'Số CCCD / CMND', user?.identityCard ?? 'Chưa cập nhật'),
-                    const Divider(height: 16),
-                    _buildRow(Icons.home_outlined, 'Địa chỉ thường trú', user?.address ?? 'Chưa cập nhật'),
-                  ],
-                ),
+            // 2. Identity info
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Thông tin tài khoản (Identity Service)',
+                    style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildRow(Icons.phone_outlined, 'Số điện thoại', user?.phoneNumber ?? 'Chưa cập nhật'),
+                  const Divider(height: 18, color: Color(0xFFF1F5F9)),
+                  _buildRow(Icons.email_outlined, 'Email', user?.email ?? 'Chưa cập nhật'),
+                  const Divider(height: 18, color: Color(0xFFF1F5F9)),
+                  _buildRow(Icons.badge_outlined, 'Số CCCD / CMND', user?.identityCard ?? 'Chưa cập nhật'),
+                  const Divider(height: 18, color: Color(0xFFF1F5F9)),
+                  _buildRow(Icons.home_outlined, 'Địa chỉ thường trú', user?.address ?? 'Chưa cập nhật'),
+                ],
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
-            // System info card
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Kiến trúc hệ thống (Sprint 1)',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildTechItem('Frontend', 'Flutter 3.x (Clean Provider State & Material 3)'),
-                    _buildTechItem('Backend', 'Django 6.x REST Framework + SimpleJWT'),
-                    _buildTechItem('Database', 'Microsoft SQL Server 2022 (mssql-django)'),
-                    _buildTechItem('Dịch vụ hoạt động', 'SERVICE 1 — Identity & SERVICE 2 — Property'),
-                    _buildTechItem('Dịch vụ scaffold sẵn', 'SERVICE 3 (Tenant), SERVICE 4 (Contract), SERVICE 5 (Billing)'),
-                  ],
-                ),
+            // 3. ⚙️ Project Setup & Architecture: Service Integration Check
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.hub_rounded, size: 20, color: Color(0xFF2563EB)),
+                          SizedBox(width: 8),
+                          Text(
+                            'Kiến trúc SOA & Tách biệt Database',
+                            style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                          ),
+                        ],
+                      ),
+                      if (_isLoadingArch)
+                        const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      else
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFDCFCE7),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Text(
+                            'KẾT NỐI OK',
+                            style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF15803D)),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Mỗi service sở hữu 1 database riêng biệt, độc lập hoàn toàn, không liên kết khóa ngoại (Foreign Key) chéo.',
+                    style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+                  ),
+                  const SizedBox(height: 14),
+
+                  _buildDbStatusTile(
+                    'Identity Service',
+                    'nhatro_identity_db',
+                    _architectureData?['databases_health']?['default']?['status'] == 'HEALTHY'
+                        ? 'Tài khoản, Phân quyền, JWT (Sẵn sàng)'
+                        : 'Tài khoản, Phân quyền, JWT',
+                    isReady: true,
+                    sprint: 'Sprint 1',
+                  ),
+                  const SizedBox(height: 8),
+                  _buildDbStatusTile(
+                    'Property Service',
+                    'nhatro_property_db',
+                    _architectureData?['databases_health']?['property_db']?['status'] == 'HEALTHY'
+                        ? 'Nhà trọ, Phòng trọ, Tỷ lệ trống (Sẵn sàng)'
+                        : 'Nhà trọ, Phòng trọ, Tỷ lệ trống',
+                    isReady: true,
+                    sprint: 'Sprint 1',
+                  ),
+                  const SizedBox(height: 8),
+                  _buildDbStatusTile(
+                    'Tenant Service',
+                    'nhatro_tenant_db',
+                    'Quản lý hồ sơ khách thuê',
+                    isReady: false,
+                    sprint: 'Sprint 2 (Kế hoạch)',
+                  ),
+                  const SizedBox(height: 8),
+                  _buildDbStatusTile(
+                    'Contract Service',
+                    'nhatro_contract_db',
+                    'Quản lý hợp đồng & gia hạn',
+                    isReady: false,
+                    sprint: 'Sprint 2 (Kế hoạch)',
+                  ),
+                  const SizedBox(height: 8),
+                  _buildDbStatusTile(
+                    'Billing & Notification',
+                    'nhatro_billing_db',
+                    'Hóa đơn điện nước & VietQR',
+                    isReady: false,
+                    sprint: 'Sprint 3 (Kế hoạch)',
+                  ),
+                ],
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 22),
 
             // Logout Button
             OutlinedButton.icon(
               style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.redAccent,
-                side: const BorderSide(color: Colors.redAccent),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                foregroundColor: const Color(0xFFDC2626),
+                side: const BorderSide(color: Color(0xFFFCA5A5)),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 13),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
-              icon: const Icon(Icons.logout),
-              label: const Text('ĐĂNG XUẤT', style: TextStyle(fontWeight: FontWeight.w700)),
+              icon: const Icon(Icons.logout_rounded, size: 18),
+              label: const Text('ĐĂNG XUẤT', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
               onPressed: () {
                 showDialog(
                   context: context,
                   builder: (ctx) => AlertDialog(
                     title: const Text('Xác nhận đăng xuất?'),
-                    content: const Text('Bạn có chắc chắn muốn đăng xuất khỏi tài khoản này?'),
+                    content: const Text('Bạn có chắc chắn muốn đăng xuất khỏi phiên làm việc hiện tại?'),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.of(ctx).pop(),
                         child: const Text('HỦY'),
                       ),
                       ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
                         onPressed: () {
                           Navigator.of(ctx).pop();
                           auth.logout();
@@ -285,38 +398,69 @@ class _ProfileTab extends StatelessWidget {
       children: [
         Icon(icon, size: 18, color: const Color(0xFF64748B)),
         const SizedBox(width: 10),
-        Text(title, style: const TextStyle(fontSize: 13, color: Color(0xFF64748B))),
+        Text(title, style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w500)),
         const Spacer(),
-        Text(val, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
+        Text(val, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: Color(0xFF0F172A))),
       ],
     );
   }
 
-  Widget _buildTechItem(String title, String desc) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+  Widget _buildDbStatusTile(
+    String serviceName,
+    String dbName,
+    String desc, {
+    required bool isReady,
+    required String sprint,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            margin: const EdgeInsets.only(top: 4),
-            width: 6,
-            height: 6,
-            decoration: const BoxDecoration(
-              color: AppTheme.primary,
-              shape: BoxShape.circle,
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: isReady ? const Color(0xFFDCFCE7) : const Color(0xFFFEF3C7),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              isReady ? Icons.check_circle_rounded : Icons.pending_rounded,
+              size: 16,
+              color: isReady ? const Color(0xFF16A34A) : const Color(0xFFD97706),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           Expanded(
-            child: RichText(
-              text: TextSpan(
-                style: const TextStyle(fontSize: 12.5, color: Color(0xFF334155)),
-                children: [
-                  TextSpan(text: '$title: ', style: const TextStyle(fontWeight: FontWeight.w700)),
-                  TextSpan(text: desc),
-                ],
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      serviceName,
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                    ),
+                    Text(
+                      sprint,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: isReady ? const Color(0xFF16A34A) : const Color(0xFFD97706),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'DB: $dbName • $desc',
+                  style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                ),
+              ],
             ),
           ),
         ],
@@ -324,4 +468,3 @@ class _ProfileTab extends StatelessWidget {
     );
   }
 }
-

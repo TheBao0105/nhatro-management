@@ -61,74 +61,89 @@ class _FutureServiceScreenState extends State<FutureServiceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: Text(widget.title, style: const TextStyle(fontWeight: FontWeight.w700)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Service Badge Banner
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    widget.themeColor,
-                    widget.themeColor.withOpacity(0.8),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Hero Banner
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      widget.themeColor,
+                      widget.themeColor.withOpacity(0.85),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: [
+                    BoxShadow(
+                      color: widget.themeColor.withOpacity(0.25),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
                   ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: widget.themeColor.withOpacity(0.3),
-                    blurRadius: 15,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Icon(widget.icon, size: 54, color: Colors.white),
-                  const SizedBox(height: 12),
-                  Text(
-                    widget.serviceName,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 19,
-                      fontWeight: FontWeight.w800,
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(widget.icon, size: 40, color: Colors.white),
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.25),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      widget.sprintName,
+                    const SizedBox(height: 14),
+                    Text(
+                      widget.serviceName,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.3,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.25),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        widget.sprintName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
 
-            const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
-            // Backend Service Health / Connectivity
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
+              // Backend Health & SOA Database Status Card
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -136,49 +151,58 @@ class _FutureServiceScreenState extends State<FutureServiceScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
-                          'Trạng thái Backend Service',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                          'Kết nối Microservice Backend',
+                          style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.refresh, size: 20),
+                          icon: const Icon(Icons.refresh_rounded, size: 20, color: Color(0xFF64748B)),
                           onPressed: _checkBackendServiceStatus,
+                          tooltip: 'Kiểm tra lại',
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     if (_isLoading)
-                      const Center(child: Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ))
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(12.0),
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
                     else if (_backendStatus != null)
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFDCFCE7),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFF86EFAC)),
+                          color: const Color(0xFFF0FDF4),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFBBF7D0)),
                         ),
                         child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(Icons.check_circle, color: Color(0xFF16A34A), size: 22),
+                            const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 22),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Dịch vụ đã được tạo & sẵn sàng: ${_backendStatus!['status']}',
+                                    'Dịch vụ đã sẵn sàng trong cấu trúc SOA: ${_backendStatus!['status']}',
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w700,
                                       color: Color(0xFF15803D),
                                       fontSize: 13,
                                     ),
                                   ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    'Database riêng: ${_backendStatus!['database'] ?? 'Isolated DB'}',
+                                    style: const TextStyle(color: Color(0xFF166534), fontSize: 12, fontWeight: FontWeight.w600),
+                                  ),
                                   const SizedBox(height: 2),
-                                  const Text(
-                                    'Django Models, Schemas & Endpoints đã được khởi tạo trên SQL Server.',
-                                    style: TextStyle(color: Color(0xFF166534), fontSize: 11.5),
+                                  Text(
+                                    '${_backendStatus!['message'] ?? 'Hoàn thành trong sprint tiếp theo.'}',
+                                    style: const TextStyle(color: Color(0xFF4B5563), fontSize: 12),
                                   ),
                                 ],
                               ),
@@ -191,30 +215,48 @@ class _FutureServiceScreenState extends State<FutureServiceScreen> {
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFEF2F2),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFFECACA)),
                         ),
-                        child: Text(
-                          _error ?? 'Chưa kết nối được tới service',
-                          style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.info_outline_rounded, color: Color(0xFFDC2626), size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _error ?? 'Không thể kết nối đến máy chủ backend.',
+                                style: const TextStyle(color: Color(0xFFDC2626), fontSize: 12.5),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                   ],
                 ),
               ),
-            ),
 
-            const SizedBox(height: 20),
+              const SizedBox(height: 18),
 
-            // Planned Features Checklist
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
+              // Roadmap Planned Features
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Các tính năng trong lộ trình phát triển:',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                    const Row(
+                      children: [
+                        Icon(Icons.checklist_rounded, size: 20, color: Color(0xFF2563EB)),
+                        SizedBox(width: 8),
+                        Text(
+                          'Các tính năng sẽ hoàn thành trong Sprint tiếp theo:',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 14),
                     ...widget.plannedFeatures.map((feat) => Padding(
@@ -226,16 +268,20 @@ class _FutureServiceScreenState extends State<FutureServiceScreen> {
                                 margin: const EdgeInsets.only(top: 2),
                                 padding: const EdgeInsets.all(3),
                                 decoration: BoxDecoration(
-                                  color: widget.themeColor.withOpacity(0.15),
+                                  color: widget.themeColor.withOpacity(0.12),
                                   shape: BoxShape.circle,
                                 ),
-                                child: Icon(Icons.check, size: 13, color: widget.themeColor),
+                                child: Icon(Icons.arrow_forward_rounded, size: 12, color: widget.themeColor),
                               ),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
                                   feat,
-                                  style: const TextStyle(fontSize: 14, color: Color(0xFF334155)),
+                                  style: const TextStyle(
+                                    fontSize: 13.5,
+                                    color: Color(0xFF334155),
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                               ),
                             ],
@@ -244,8 +290,8 @@ class _FutureServiceScreenState extends State<FutureServiceScreen> {
                   ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

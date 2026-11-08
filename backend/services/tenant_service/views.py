@@ -4,20 +4,22 @@ from rest_framework import permissions
 
 class TenantServiceStatusView(APIView):
     """
-    SERVICE 3 — TENANT SERVICE: Endpoint giới thiệu dịch vụ (Dành cho Sprint 2)
+    SERVICE 3 — TENANT SERVICE:
+    Thông báo trạng thái hoàn thành trong Sprint tiếp theo (Sprint 2)
     """
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         return Response({
-            'service': 'SERVICE 3 — TENANT SERVICE',
-            'status': 'READY_FOR_SPRINT_2',
-            'sprint': 'Sprint 2 — Tenant & Contract',
+            'service_name': 'SERVICE 3 — TENANT SERVICE (QUẢN LÝ NGƯỜI THUÊ)',
+            'status': 'PLANNED_SPRINT_2',
+            'sprint': 'Sprint 2 — Tenant & Contract Management',
+            'message': 'Dịch vụ này được lên lịch hoàn thành trong Sprint 2 tiếp theo.',
+            'database': 'nhatro_tenant_db',
             'planned_features': [
-                'Quản lý danh sách khách thuê',
-                'Quản lý thông tin tạm trú, CCCD',
-                'Lịch sử cư trú và đổi phòng',
-                'Ghi nhận liên hệ khẩn cấp',
+                'Hồ sơ định danh khách thuê (CCCD/CMND, quê quán, nghề nghiệp)',
+                'Quản lý khai báo đăng ký tạm trú',
+                'Lịch sử cư trú và chuyển đổi phòng',
+                'Quản lý danh sách thành viên cùng phòng',
             ]
         })
-

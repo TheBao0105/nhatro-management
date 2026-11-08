@@ -2,8 +2,7 @@ import 'room_model.dart';
 
 class PropertyModel {
   final int id;
-  final int? landlordId;
-  final String? landlordName;
+  final int? ownerId;
   final String name;
   final String address;
   final String? ward;
@@ -25,8 +24,7 @@ class PropertyModel {
 
   PropertyModel({
     required this.id,
-    this.landlordId,
-    this.landlordName,
+    this.ownerId,
     required this.name,
     required this.address,
     this.ward,
@@ -57,10 +55,9 @@ class PropertyModel {
 
     return PropertyModel(
       id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
-      landlordId: json['landlord'] is int
-          ? json['landlord']
-          : int.tryParse(json['landlord'].toString()),
-      landlordName: json['landlord_name'],
+      ownerId: json['owner_id'] is int
+          ? json['owner_id']
+          : int.tryParse(json['owner_id']?.toString() ?? ''),
       name: json['name'] ?? '',
       address: json['address'] ?? '',
       ward: json['ward'],
@@ -69,16 +66,16 @@ class PropertyModel {
       fullAddress: json['full_address'] ?? json['address'],
       totalFloors: json['total_floors'] is int
           ? json['total_floors']
-          : int.tryParse(json['total_floors'].toString()) ?? 1,
+          : int.tryParse(json['total_floors']?.toString() ?? '1') ?? 1,
       electricityRate: (json['electricity_rate'] is num)
           ? (json['electricity_rate'] as num).toDouble()
-          : double.tryParse(json['electricity_rate'].toString()) ?? 3500.0,
+          : double.tryParse(json['electricity_rate']?.toString() ?? '3500') ?? 3500.0,
       waterRate: (json['water_rate'] is num)
           ? (json['water_rate'] as num).toDouble()
-          : double.tryParse(json['water_rate'].toString()) ?? 20000.0,
+          : double.tryParse(json['water_rate']?.toString() ?? '20000') ?? 20000.0,
       internetRate: (json['internet_rate'] is num)
           ? (json['internet_rate'] as num).toDouble()
-          : double.tryParse(json['internet_rate'].toString()) ?? 100000.0,
+          : double.tryParse(json['internet_rate']?.toString() ?? '100000') ?? 100000.0,
       description: json['description'],
       rules: json['rules'],
       imageUrl: json['image_url'],
@@ -113,4 +110,3 @@ class PropertyModel {
     };
   }
 }
-

@@ -7,6 +7,8 @@ from services.identity_service.models import UserRole
 User = get_user_model()
 
 class IdentityServiceTests(TestCase):
+    databases = {'default'}
+
     def setUp(self):
         self.client = APIClient()
         self.landlord = User.objects.create_user(
@@ -19,6 +21,7 @@ class IdentityServiceTests(TestCase):
         )
 
     def test_login_success(self):
+        """SPRINT 1: Test Login API & JWT Authentication"""
         response = self.client.post('/api/v1/auth/login/', {
             'username': 'testlandlord',
             'password': 'testpassword123'
@@ -29,17 +32,18 @@ class IdentityServiceTests(TestCase):
         self.assertIn('user', response.data)
         self.assertEqual(response.data['user']['role'], UserRole.LANDLORD)
 
-    def test_login_invalid_password(self):
+    def test_login_invalid_credentials(self):
+        """SPRINT 1: Test Login thất bại khi sai mật khẩu"""
         response = self.client.post('/api/v1/auth/login/', {
             'username': 'testlandlord',
             'password': 'wrongpassword'
         }, format='json')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_get_current_user_profile(self):
+    def test_role_authorization_and_me(self):
+        """SPRINT 1: Test Role Authorization & Me endpoint"""
         self.client.force_authenticate(user=self.landlord)
         response = self.client.get('/api/v1/auth/me/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['username'], 'testlandlord')
         self.assertEqual(response.data['role'], UserRole.LANDLORD)
-

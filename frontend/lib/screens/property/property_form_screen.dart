@@ -94,14 +94,14 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(isEdit ? 'Đã cập nhật nhà trọ' : 'Tạo mới nhà trọ thành công!'),
-          backgroundColor: Colors.green,
+          backgroundColor: const Color(0xFF16A34A),
         ),
       );
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(provider.errorMessage ?? 'Thao tác thất bại'),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: const Color(0xFFDC2626),
         ),
       );
     }
@@ -112,10 +112,11 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
     final provider = Provider.of<PropertyProvider>(context);
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: Text(
           isEdit ? 'Chỉnh Sửa Nhà Trọ' : 'Thêm Nhà Trọ Mới',
-          style: const TextStyle(fontWeight: FontWeight.w700),
+          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
         ),
       ),
       body: SingleChildScrollView(
@@ -125,147 +126,159 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Thông tin chung',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 14),
-                      CustomTextField(
-                        controller: _nameController,
-                        label: 'Tên nhà trọ / Tòa nhà *',
-                        hint: 'VD: Nhà trọ Hoa Mai, Tòa Mini Happy House',
-                        prefixIcon: Icons.apartment,
-                        validator: (v) => (v == null || v.isEmpty) ? 'Vui lòng nhập tên nhà trọ' : null,
-                      ),
-                      const SizedBox(height: 14),
-                      CustomTextField(
-                        controller: _addressController,
-                        label: 'Địa chỉ số nhà, tên đường *',
-                        hint: 'VD: 123 Đường Nguyễn Gia Trí',
-                        prefixIcon: Icons.location_on_outlined,
-                        validator: (v) => (v == null || v.isEmpty) ? 'Vui lòng nhập địa chỉ' : null,
-                      ),
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: CustomTextField(
-                              controller: _wardController,
-                              label: 'Phường / Xã',
-                              hint: 'VD: Phường 25',
-                            ),
+              // Thông tin chung
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Thông tin chung',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                    ),
+                    const SizedBox(height: 14),
+                    CustomTextField(
+                      controller: _nameController,
+                      label: 'Tên nhà trọ / Tòa nhà *',
+                      hint: 'VD: Nhà trọ Hoa Mai, Tòa Happy House',
+                      prefixIcon: Icons.apartment_rounded,
+                      validator: (v) => (v == null || v.isEmpty) ? 'Vui lòng nhập tên nhà trọ' : null,
+                    ),
+                    const SizedBox(height: 14),
+                    CustomTextField(
+                      controller: _addressController,
+                      label: 'Địa chỉ số nhà, tên đường *',
+                      hint: 'VD: 123 Đường Nguyễn Gia Trí',
+                      prefixIcon: Icons.location_on_outlined,
+                      validator: (v) => (v == null || v.isEmpty) ? 'Vui lòng nhập địa chỉ' : null,
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CustomTextField(
+                            controller: _wardController,
+                            label: 'Phường / Xã',
+                            hint: 'VD: Phường 25',
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: CustomTextField(
-                              controller: _districtController,
-                              label: 'Quận / Huyện',
-                              hint: 'VD: Bình Thạnh',
-                            ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: CustomTextField(
+                            controller: _districtController,
+                            label: 'Quận / Huyện',
+                            hint: 'VD: Bình Thạnh',
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: CustomTextField(
-                              controller: _cityController,
-                              label: 'Tỉnh / Thành phố',
-                              hint: 'TP. Hồ Chí Minh',
-                            ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CustomTextField(
+                            controller: _cityController,
+                            label: 'Tỉnh / Thành phố',
+                            hint: 'TP. Hồ Chí Minh',
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: CustomTextField(
-                              controller: _floorsController,
-                              label: 'Số tầng',
-                              keyboardType: TextInputType.number,
-                              prefixIcon: Icons.layers_outlined,
-                            ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: CustomTextField(
+                            controller: _floorsController,
+                            label: 'Số tầng',
+                            keyboardType: TextInputType.number,
+                            prefixIcon: Icons.layers_outlined,
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
 
               const SizedBox(height: 16),
 
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Biểu phí dịch vụ cơ sở',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 14),
-                      CustomTextField(
-                        controller: _electricRateController,
-                        label: 'Đơn giá điện (VNĐ/kWh)',
-                        hint: '3500',
-                        keyboardType: TextInputType.number,
-                        prefixIcon: Icons.electric_bolt,
-                      ),
-                      const SizedBox(height: 14),
-                      CustomTextField(
-                        controller: _waterRateController,
-                        label: 'Đơn giá nước (VNĐ/m³ hoặc người)',
-                        hint: '20000',
-                        keyboardType: TextInputType.number,
-                        prefixIcon: Icons.water_drop,
-                      ),
-                      const SizedBox(height: 14),
-                      CustomTextField(
-                        controller: _internetRateController,
-                        label: 'Phí Internet / Wifi (VNĐ/phòng/tháng)',
-                        hint: '100000',
-                        keyboardType: TextInputType.number,
-                        prefixIcon: Icons.wifi,
-                      ),
-                    ],
-                  ),
+              // Biểu phí dịch vụ
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Biểu phí dịch vụ cơ sở',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                    ),
+                    const SizedBox(height: 14),
+                    CustomTextField(
+                      controller: _electricRateController,
+                      label: 'Đơn giá điện (VNĐ/kWh)',
+                      hint: '3500',
+                      keyboardType: TextInputType.number,
+                      prefixIcon: Icons.electric_bolt_rounded,
+                    ),
+                    const SizedBox(height: 14),
+                    CustomTextField(
+                      controller: _waterRateController,
+                      label: 'Đơn giá nước (VNĐ/m³ hoặc người)',
+                      hint: '20000',
+                      keyboardType: TextInputType.number,
+                      prefixIcon: Icons.water_drop_rounded,
+                    ),
+                    const SizedBox(height: 14),
+                    CustomTextField(
+                      controller: _internetRateController,
+                      label: 'Phí Internet / Wifi (VNĐ/phòng/tháng)',
+                      hint: '100000',
+                      keyboardType: TextInputType.number,
+                      prefixIcon: Icons.wifi_rounded,
+                    ),
+                  ],
                 ),
               ),
 
               const SizedBox(height: 16),
 
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Mô tả & Nội quy',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 14),
-                      CustomTextField(
-                        controller: _rulesController,
-                        label: 'Nội quy nhà trọ',
-                        hint: 'VD: Không làm ồn sau 23h, khóa cổng vân tay...',
-                        maxLines: 3,
-                      ),
-                      const SizedBox(height: 14),
-                      CustomTextField(
-                        controller: _descController,
-                        label: 'Mô tả tiện ích chung',
-                        hint: 'VD: Camera 24/7, bãi giữ xe rộng rãi, sân thượng phơi đồ...',
-                        maxLines: 3,
-                      ),
-                    ],
-                  ),
+              // Nội quy & Tiện ích
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Mô tả & Nội quy chung',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                    ),
+                    const SizedBox(height: 14),
+                    CustomTextField(
+                      controller: _rulesController,
+                      label: 'Nội quy nhà trọ',
+                      hint: 'VD: Không làm ồn sau 23h, khóa cổng vân tay...',
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 14),
+                    CustomTextField(
+                      controller: _descController,
+                      label: 'Mô tả tiện ích chung',
+                      hint: 'VD: Camera 24/7, bãi đỗ xe rộng rãi, sân phơi đồ...',
+                      maxLines: 3,
+                    ),
+                  ],
                 ),
               ),
 
@@ -273,6 +286,10 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
 
               ElevatedButton(
                 onPressed: provider.isLoading ? null : _handleSave,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2563EB),
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                ),
                 child: provider.isLoading
                     ? const SizedBox(
                         height: 20,
@@ -289,4 +306,3 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
     );
   }
 }
-
