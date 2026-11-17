@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/custom_text_field.dart';
+import 'identity_form_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -222,6 +223,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                 )
                               : const Text('ĐĂNG NHẬP'),
                         ),
+                        TextButton(
+                          onPressed: auth.isLoading ? null : () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const IdentityFormScreen(mode: IdentityFormMode.register))),
+                          child: const Text('Chưa có tài khoản? Đăng ký chủ trọ'),
+                        ),
+                        if (auth.errorMessage != null) Text(auth.errorMessage!,
+                          style: const TextStyle(color: Colors.red)),
                       ],
                     ),
                   ),

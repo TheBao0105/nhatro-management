@@ -5,6 +5,18 @@ import '../models/property_model.dart';
 import '../models/room_model.dart';
 
 class PropertyProvider with ChangeNotifier {
+  int? _accountId;
+
+  void bindUser(int? accountId) {
+    if (_accountId == accountId) return;
+    _accountId = accountId;
+    _properties = [];
+    _selectedProperty = null;
+    _rooms = [];
+    _propertyStats = null;
+    _isLoading = false;
+    _errorMessage = null;
+  }
   List<PropertyModel> _properties = [];
   PropertyModel? _selectedProperty;
   List<RoomModel> _rooms = [];

@@ -19,7 +19,11 @@ class NhaTroApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => PropertyProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, PropertyProvider>(
+          create: (_) => PropertyProvider(),
+          update: (_, auth, previous) => (previous ?? PropertyProvider())
+            ..bindUser(auth.user?.id),
+        ),
       ],
       child: MaterialApp(
         title: 'Quản Lý Nhà Trọ',
@@ -31,14 +35,27 @@ class NhaTroApp extends StatelessWidget {
   }
 }
 
-class AuthGate extends StatelessWidget {
+class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
+
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  bool _wasAuthenticated = false;
 
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
+    if (_wasAuthenticated && !auth.isAuthenticated) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
+      });
+    }
+    _wasAuthenticated = auth.isAuthenticated;
 
-    if (auth.isLoading) {
+    if (auth.isInitializing) {
       return const Scaffold(
         body: Center(
           child: Column(

@@ -7,6 +7,8 @@ class ApiConstants {
   static String login = '$baseUrl/auth/login/';
   static String register = '$baseUrl/auth/register/';
   static String refreshToken = '$baseUrl/auth/refresh/';
+  static String logout = '$baseUrl/auth/logout/';
+  static String changePassword = '$baseUrl/auth/change-password/';
   static String currentUser = '$baseUrl/auth/me/';
   static String users = '$baseUrl/users/';
 

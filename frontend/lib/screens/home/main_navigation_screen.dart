@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../providers/auth_provider.dart';
+
 import '../../core/constants/api_constants.dart';
 import '../../core/theme/app_theme.dart';
-import '../../widgets/status_badge.dart';
+import '../auth/profile_screen.dart';
 import '../property/property_list_screen.dart';
 import '../future_services/future_service_screen.dart';
 
@@ -70,16 +69,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     ),
 
     // 4: SERVICE 1 — Identity (Tài khoản & Phân quyền)
-    const _ProfileTab(),
+    const ProfileScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _pages,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _pages),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) {
@@ -121,207 +117,3 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 }
-
-class _ProfileTab extends StatelessWidget {
-  const _ProfileTab();
-
-  @override
-  Widget build(BuildContext context) {
-    final auth = Provider.of<AuthProvider>(context);
-    final user = auth.user;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tài Khoản & Phân Quyền', style: TextStyle(fontWeight: FontWeight.w700)),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            // User Card
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  CircleAvatar(
-                    radius: 38,
-                    backgroundColor: AppTheme.primary.withOpacity(0.12),
-                    child: Text(
-                      (user?.displayName.isNotEmpty ?? false)
-                          ? user!.displayName[0].toUpperCase()
-                          : 'U',
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: AppTheme.primary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    user?.displayName ?? 'Người dùng',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '@${user?.username ?? ''}',
-                    style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
-                  ),
-                  const SizedBox(height: 10),
-                  RoleBadge(
-                    role: user?.role ?? 'LANDLORD',
-                    label: user?.roleDisplay,
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Profile info card
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Thông tin định danh',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 14),
-                    _buildRow(Icons.phone_outlined, 'Số điện thoại', user?.phoneNumber ?? 'Chưa cập nhật'),
-                    const Divider(height: 16),
-                    _buildRow(Icons.email_outlined, 'Email', user?.email ?? 'Chưa cập nhật'),
-                    const Divider(height: 16),
-                    _buildRow(Icons.badge_outlined, 'Số CCCD / CMND', user?.identityCard ?? 'Chưa cập nhật'),
-                    const Divider(height: 16),
-                    _buildRow(Icons.home_outlined, 'Địa chỉ thường trú', user?.address ?? 'Chưa cập nhật'),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // System info card
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Kiến trúc hệ thống (Sprint 1)',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildTechItem('Frontend', 'Flutter 3.x (Clean Provider State & Material 3)'),
-                    _buildTechItem('Backend', 'Django 6.x REST Framework + SimpleJWT'),
-                    _buildTechItem('Database', 'Microsoft SQL Server 2022 (mssql-django)'),
-                    _buildTechItem('Dịch vụ hoạt động', 'SERVICE 1 — Identity & SERVICE 2 — Property'),
-                    _buildTechItem('Dịch vụ scaffold sẵn', 'SERVICE 3 (Tenant), SERVICE 4 (Contract), SERVICE 5 (Billing)'),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Logout Button
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.redAccent,
-                side: const BorderSide(color: Colors.redAccent),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              icon: const Icon(Icons.logout),
-              label: const Text('ĐĂNG XUẤT', style: TextStyle(fontWeight: FontWeight.w700)),
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: const Text('Xác nhận đăng xuất?'),
-                    content: const Text('Bạn có chắc chắn muốn đăng xuất khỏi tài khoản này?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(),
-                        child: const Text('HỦY'),
-                      ),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-                        onPressed: () {
-                          Navigator.of(ctx).pop();
-                          auth.logout();
-                        },
-                        child: const Text('ĐĂNG XUẤT'),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRow(IconData icon, String title, String val) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: const Color(0xFF64748B)),
-        const SizedBox(width: 10),
-        Text(title, style: const TextStyle(fontSize: 13, color: Color(0xFF64748B))),
-        const Spacer(),
-        Text(val, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
-      ],
-    );
-  }
-
-  Widget _buildTechItem(String title, String desc) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            margin: const EdgeInsets.only(top: 4),
-            width: 6,
-            height: 6,
-            decoration: const BoxDecoration(
-              color: AppTheme.primary,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: RichText(
-              text: TextSpan(
-                style: const TextStyle(fontSize: 12.5, color: Color(0xFF334155)),
-                children: [
-                  TextSpan(text: '$title: ', style: const TextStyle(fontWeight: FontWeight.w700)),
-                  TextSpan(text: desc),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-

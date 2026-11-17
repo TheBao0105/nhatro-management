@@ -7,104 +7,116 @@ import '../models/user_model.dart';
 class AuthProvider with ChangeNotifier {
   UserModel? _user;
   bool _isAuthenticated = false;
-  bool _isLoading = true;
+  bool _isLoading = false;
+  bool _isInitializing = true;
   String? _errorMessage;
 
   UserModel? get user => _user;
   bool get isAuthenticated => _isAuthenticated;
   bool get isLoading => _isLoading;
+  bool get isInitializing => _isInitializing;
   String? get errorMessage => _errorMessage;
 
   AuthProvider() {
+    ApiClient.onUnauthorized = _handleUnauthorized;
     initAuth();
   }
 
-  Future<void> initAuth() async {
-    _isLoading = true;
+  void _handleUnauthorized() {
+    _user = null;
+    _isAuthenticated = false;
+    _errorMessage = 'Phiên đã hết hạn. Vui lòng đăng nhập lại.';
     notifyListeners();
+  }
 
+  Future<void> initAuth() async {
     try {
-      final token = await AuthStorage.getAccessToken();
-      final savedUser = await AuthStorage.getUser();
-
-      if (token != null && savedUser != null) {
-        _user = savedUser;
+      if (await AuthStorage.getAccessToken() != null) {
+        final response = await ApiClient.get(ApiConstants.currentUser);
+        _user = UserModel.fromJson(response as Map<String, dynamic>);
+        await AuthStorage.saveUser(_user!);
         _isAuthenticated = true;
-        // Background verify or refresh profile
-        _fetchProfileSilently();
-      } else {
-        _isAuthenticated = false;
-        _user = null;
       }
-    } catch (_) {
-      _isAuthenticated = false;
-      _user = null;
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _isInitializing = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> _perform(Future<void> Function() action) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      await action();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      return false;
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<void> _fetchProfileSilently() async {
-    try {
-      final res = await ApiClient.get(ApiConstants.currentUser);
-      if (res is Map<String, dynamic>) {
-        _user = UserModel.fromJson(res);
-        notifyListeners();
-      }
-    } catch (_) {}
-  }
+  Future<bool> login(String username, String password) => _perform(() async {
+    final response = await ApiClient.post(ApiConstants.login,
+        {'username': username.trim(), 'password': password}, requireAuth: false);
+    final user = UserModel.fromJson(response['user'] as Map<String, dynamic>);
+    ApiClient.resetSession();
+    await AuthStorage.saveAuthData(accessToken: response['access'] as String,
+        refreshToken: response['refresh'] as String, user: user);
+    _user = user;
+    _isAuthenticated = true;
+  });
 
-  Future<bool> login(String username, String password) async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
+  Future<bool> register(Map<String, dynamic> data) => _perform(() async {
+    await ApiClient.post(ApiConstants.register, data, requireAuth: false);
+  });
 
-    try {
-      final response = await ApiClient.post(
-        ApiConstants.login,
-        {
-          'username': username.trim(),
-          'password': password.trim(),
-        },
-        requireAuth: false,
-      );
+  Future<bool> updateProfile(Map<String, dynamic> data) => _perform(() async {
+    final response = await ApiClient.patch(ApiConstants.currentUser, data);
+    _user = UserModel.fromJson(response as Map<String, dynamic>);
+    await AuthStorage.saveUser(_user!);
+  });
 
-      final accessToken = response['access'] as String;
-      final refreshToken = response['refresh'] as String;
-      final userMap = response['user'] as Map<String, dynamic>;
-      final userObj = UserModel.fromJson(userMap);
+  Future<bool> changePassword(Map<String, dynamic> data) => _perform(() async {
+    await ApiClient.post(ApiConstants.changePassword, data);
+    await _clearSession();
+  });
 
-      await AuthStorage.saveAuthData(
-        accessToken: accessToken,
-        refreshToken: refreshToken,
-        user: userObj,
-      );
-
-      _user = userObj;
-      _isAuthenticated = true;
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      _errorMessage = e.toString();
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }
-
-  Future<void> logout() async {
+  Future<void> _clearSession() async {
+    ApiClient.resetSession();
     await AuthStorage.clearAuthData();
     _user = null;
     _isAuthenticated = false;
-    _errorMessage = null;
-    notifyListeners();
+  }
+
+  Future<void> logout() async {
+    final token = await AuthStorage.getRefreshToken();
+    try {
+      if (token != null) {
+        await ApiClient.post(ApiConstants.logout, {'refresh': token}, requireAuth: false);
+      }
+    } catch (_) {
+      // Local sign-out must still work when the server is offline.
+    } finally {
+      await _clearSession();
+      _errorMessage = null;
+      notifyListeners();
+    }
   }
 
   void clearError() {
     _errorMessage = null;
     notifyListeners();
   }
-}
 
+  @override
+  void dispose() {
+    if (ApiClient.onUnauthorized == _handleUnauthorized) ApiClient.onUnauthorized = null;
+    super.dispose();
+  }
+}

@@ -11,6 +11,8 @@ class UserModel {
   final String? identityCard;
   final String? address;
   final String? avatarUrl;
+  final bool isActive;
+  final bool isAdminRole;
 
   UserModel({
     required this.id,
@@ -25,9 +27,11 @@ class UserModel {
     this.identityCard,
     this.address,
     this.avatarUrl,
+    this.isActive = true,
+    this.isAdminRole = false,
   });
 
-  bool get isAdmin => role == 'ADMIN';
+  bool get isAdmin => role == 'ADMIN' || isAdminRole;
   bool get isLandlord => role == 'LANDLORD';
   bool get isTenant => role == 'TENANT';
   bool get isStaff => role == 'STAFF';
@@ -49,6 +53,8 @@ class UserModel {
       identityCard: json['identity_card'],
       address: json['address'],
       avatarUrl: json['avatar_url'],
+      isActive: json['is_active'] != false,
+      isAdminRole: json['is_admin_role'] == true,
     );
   }
 
@@ -66,6 +72,8 @@ class UserModel {
       'identity_card': identityCard,
       'address': address,
       'avatar_url': avatarUrl,
+      'is_active': isActive,
+      'is_admin_role': isAdminRole,
     };
   }
 }

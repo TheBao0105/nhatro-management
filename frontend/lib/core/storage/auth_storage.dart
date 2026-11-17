@@ -23,6 +23,17 @@ class AuthStorage {
     return prefs.getString(_keyAccessToken);
   }
 
+  static Future<void> saveTokens(String access, String refresh) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyAccessToken, access);
+    await prefs.setString(_keyRefreshToken, refresh);
+  }
+
+  static Future<void> saveUser(UserModel user) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyUser, jsonEncode(user.toJson()));
+  }
+
   static Future<String?> getRefreshToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_keyRefreshToken);
