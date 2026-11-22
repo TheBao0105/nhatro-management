@@ -131,10 +131,10 @@ class PropertyViewSet(viewsets.ModelViewSet):
         queryset = scoped_properties(self.request.user).prefetch_related('rooms')
         params = self.request.query_params
 
-        # 1.7 Lọc theo trạng thái hoạt động
+        # 1.7 Lọc theo trạng thái hoạt động (chỉ áp dụng cho list nhà trọ; action rooms dùng ?status= để lọc phòng)
         status_param = params.get('status')
         include_deleted = params.get('include_deleted') == 'true'
-        if status_param and status_param != 'ALL':
+        if self.action == 'list' and status_param and status_param != 'ALL':
             queryset = queryset.filter(status=status_param.upper())
         elif not include_deleted and self.action == 'list' and status_param != 'ALL':
             queryset = queryset.exclude(status=PropertyStatus.DELETED)

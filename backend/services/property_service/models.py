@@ -1,6 +1,14 @@
 import builtins
+from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
+
+
+def validate_positive_area(value):
+    """Diện tích phòng phải lớn hơn 0 m²."""
+    if value is not None and value <= 0:
+        raise ValidationError('Diện tích phòng phải lớn hơn 0.')
 
 
 # ==============================================================================
@@ -26,9 +34,18 @@ class Property(models.Model):
     city = models.CharField(max_length=100, default='TP. Hồ Chí Minh', verbose_name='Tỉnh / Thành phố')
     total_floors = models.PositiveIntegerField(default=1, verbose_name='Số tầng')
 
-    electricity_rate = models.DecimalField(max_digits=12, decimal_places=0, default=3500, verbose_name='Đơn giá điện (VNĐ/kWh)')
-    water_rate = models.DecimalField(max_digits=12, decimal_places=0, default=20000, verbose_name='Đơn giá nước (VNĐ/m³)')
-    internet_rate = models.DecimalField(max_digits=12, decimal_places=0, default=100000, verbose_name='Phí Internet (VNĐ/tháng)')
+    electricity_rate = models.DecimalField(
+        max_digits=12, decimal_places=0, default=3500,
+        validators=[MinValueValidator(0)], verbose_name='Đơn giá điện (VNĐ/kWh)',
+    )
+    water_rate = models.DecimalField(
+        max_digits=12, decimal_places=0, default=20000,
+        validators=[MinValueValidator(0)], verbose_name='Đơn giá nước (VNĐ/m³)',
+    )
+    internet_rate = models.DecimalField(
+        max_digits=12, decimal_places=0, default=100000,
+        validators=[MinValueValidator(0)], verbose_name='Phí Internet (VNĐ/tháng)',
+    )
 
     description = models.TextField(blank=True, default='', verbose_name='Mô tả nhà trọ')
     rules = models.TextField(blank=True, default='', verbose_name='Nội quy nhà trọ')
@@ -149,10 +166,16 @@ class Room(models.Model):
         default=RoomType.MEZZANINE,
         verbose_name='Loại phòng',
     )
-    area = models.FloatField(default=20.0, verbose_name='Diện tích (m²)')
-    rent_price = models.DecimalField(max_digits=12, decimal_places=0, verbose_name='Giá thuê (VNĐ/tháng)')
-    deposit_amount = models.DecimalField(max_digits=12, decimal_places=0, default=0, verbose_name='Tiền cọc (VNĐ)')
-    max_occupants = models.PositiveIntegerField(default=2, verbose_name='Số người tối đa')
+    area = models.FloatField(default=20.0, validators=[validate_positive_area], verbose_name='Diện tích (m²)')
+    rent_price = models.DecimalField(
+        max_digits=12, decimal_places=0, validators=[MinValueValidator(0)], verbose_name='Giá thuê (VNĐ/tháng)',
+    )
+    deposit_amount = models.DecimalField(
+        max_digits=12, decimal_places=0, default=0, validators=[MinValueValidator(0)], verbose_name='Tiền cọc (VNĐ)',
+    )
+    max_occupants = models.PositiveIntegerField(
+        default=2, validators=[MinValueValidator(1)], verbose_name='Số người tối đa',
+    )
     current_occupants = models.PositiveIntegerField(default=0, verbose_name='Số người đang ở')
 
     status = models.CharField(

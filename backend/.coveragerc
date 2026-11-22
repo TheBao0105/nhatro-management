@@ -1,0 +1,17 @@
+# Cấu hình Coverage.py cho Service 2 (Property & Room). Dùng:
+#   coverage run --rcfile=.coveragerc manage.py test services.property_service
+[run]
+branch = True
+source = services/property_service
+omit =
+    */migrations/*
+    */testing/*
+    */unit_tests/*
+    */tests.py
+    */admin.py
+    */apps.py
+    */__init__.py
+
+[report]
+show_missing = True
+skip_empty = True
