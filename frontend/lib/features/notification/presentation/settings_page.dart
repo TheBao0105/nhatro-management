@@ -44,12 +44,14 @@ class _SettingsPageState extends State<SettingsPage> {
                   label: 'Mật khẩu hiện tại',
                   controller: oldCtrl,
                   requiredField: true,
+                  obscureText: true,
                 ),
                 const SizedBox(height: 12),
                 AppTextField(
                   label: 'Mật khẩu mới',
                   controller: newCtrl,
                   requiredField: true,
+                  obscureText: true,
                   validator: (v) {
                     if (v == null || v.trim().length < 6) {
                       return 'Mật khẩu mới cần tối thiểu 6 ký tự';
@@ -62,6 +64,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   label: 'Xác nhận mật khẩu mới',
                   controller: confirmCtrl,
                   requiredField: true,
+                  obscureText: true,
                   validator: (v) {
                     if (v != newCtrl.text) return 'Mật khẩu xác nhận không khớp';
                     return null;

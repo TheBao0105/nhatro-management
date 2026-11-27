@@ -7,10 +7,12 @@ import 'package:http/testing.dart';
 import 'package:nhatro_frontend/core/constants/api_constants.dart';
 import 'package:nhatro_frontend/core/constants/soa_services.dart';
 import 'package:nhatro_frontend/core/widgets/app_sidebar.dart';
+import 'package:nhatro_frontend/features/notification/presentation/settings_page.dart';
 import 'package:nhatro_frontend/main.dart';
 import 'package:nhatro_frontend/providers/auth_provider.dart';
 import 'package:nhatro_frontend/shared/services/api_client.dart';
 import 'package:nhatro_frontend/shared/services/app_data_repository.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// AuthProvider giả: không gọi mạng.
@@ -108,6 +110,33 @@ void main() {
       expect(s.gatewayEndpoint, startsWith(ApiConstants.baseUrl));
       expect(s.gatewayEndpoint, isNot(contains(':${s.port}')));
     }
+  });
+
+  testWidgets('Đổi mật khẩu che ký tự ở cả ba ô mật khẩu', (tester) async {
+    _desktop(tester);
+    final auth = FakeAuthProvider(AuthStatus.authenticated);
+    addTearDown(auth.dispose);
+    await tester.pumpWidget(
+      ChangeNotifierProvider<AuthProvider>.value(
+        value: auth,
+        child: const MaterialApp(
+          home: Scaffold(body: SingleChildScrollView(child: SettingsPage())),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Đổi mật khẩu'));
+    await tester.pumpAndSettle();
+
+    final fields = find.descendant(
+      of: find.byType(AlertDialog),
+      matching: find.byType(EditableText),
+    );
+    expect(fields, findsNWidgets(3));
+    expect(
+      tester.widgetList<EditableText>(fields).map((field) => field.obscureText),
+      everyElement(isTrue),
+    );
   });
 
   test('ApiClient tự động refresh JWT khi nhận 401 và gọi lại Gateway', () async {

@@ -153,7 +153,9 @@ class RegisterSerializer(serializers.ModelSerializer):
     def validate_email(self, value):
         # Email không bắt buộc; nếu có thì không được trùng (không phân biệt hoa/thường).
         value = (value or '').strip()
-        if value and User.objects.filter(email__iexact=value).exists():
+        if not value:
+            return value
+        if User.objects.filter(email__iexact=value).exists():
             raise serializers.ValidationError('Email đã được sử dụng.')
         return value
 
