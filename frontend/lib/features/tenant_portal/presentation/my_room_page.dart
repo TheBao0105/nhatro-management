@@ -87,7 +87,7 @@ class _RoomCard extends StatelessWidget {
           InfoRow('Nhà trọ', property?.name ?? room.propertyName),
           InfoRow('Địa chỉ', property?.displayAddress ?? ''),
           InfoRow('Tầng', '${room.floor}'),
-          InfoRow('Diện tích', room.area > 0 ? '${room.area} m²' : ''),
+          InfoRow('Diện tích', room.area > 0 ? '${AppFormatters.area(room.area)} m²' : ''),
           InfoRow('Giá thuê / tháng', AppFormatters.currency(room.rentPrice)),
           InfoRow('Số người ở', '${room.currentOccupants}/${room.maxOccupants}'),
           if (room.description.isNotEmpty) InfoRow('Mô tả', room.description),

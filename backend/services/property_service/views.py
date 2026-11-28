@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from common.auth import (
     IsManagerOrReadOnly, IsManagerRole, get_user_id, is_admin, is_landlord, is_manager,
 )
-from common.service_client import own_rented_room_ids
+from common.service_client import own_rented_room_ids, room_external_block_reason
 from common.sprint import SprintFeatureLock
 from .models import (
     RENTED_STATUSES,
@@ -131,10 +131,10 @@ class PropertyViewSet(viewsets.ModelViewSet):
         queryset = scoped_properties(self.request.user).prefetch_related('rooms')
         params = self.request.query_params
 
-        # 1.7 Lọc theo trạng thái hoạt động
+        # 1.7 Lọc theo trạng thái hoạt động (chỉ áp dụng cho list nhà trọ; action rooms dùng ?status= để lọc phòng)
         status_param = params.get('status')
         include_deleted = params.get('include_deleted') == 'true'
-        if status_param and status_param != 'ALL':
+        if self.action == 'list' and status_param and status_param != 'ALL':
             queryset = queryset.filter(status=status_param.upper())
         elif not include_deleted and self.action == 'list' and status_param != 'ALL':
             queryset = queryset.exclude(status=PropertyStatus.DELETED)
@@ -166,21 +166,33 @@ class PropertyViewSet(viewsets.ModelViewSet):
     def _room_data(self, rooms):
         return RoomSerializer(rooms, many=True, context=self.get_serializer_context()).data
 
+    @staticmethod
+    def _active_rooms_block_response(prop):
+        """Chặn xóa nhà trọ khi còn phòng đang hoạt động (mọi trạng thái khác INACTIVE)."""
+        active = prop.rooms.exclude(status=RoomStatus.INACTIVE)
+        active_count = active.count()
+        if active_count == 0:
+            return None
+        rented = active.filter(status__in=RENTED_STATUSES).count()
+        detail = f' (trong đó {rented} phòng đang thuê)' if rented else ''
+        return Response(
+            {
+                'error': f'Nhà trọ "{prop.name}" còn {active_count} phòng đang hoạt động{detail}. '
+                         f'Hãy chuyển các phòng sang INACTIVE hoặc xóa phòng trước khi xóa nhà trọ.'
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     def destroy(self, request, *args, **kwargs):
         """
         1.5 Soft Delete nhà trọ:
-        Nếu nhà trọ đang có phòng hoặc dữ liệu liên quan, chuyển sang DELETED thay vì xóa cứng.
+        Chỉ cho xóa khi không còn phòng hoạt động. Nếu còn phòng INACTIVE (dữ liệu lịch sử),
+        chuyển sang DELETED thay vì xóa cứng.
         """
         prop = self.get_object()
-        occupied_count = prop.rooms.filter(status__in=RENTED_STATUSES).count()
-        if occupied_count > 0:
-            return Response(
-                {
-                    'error': f'Nhà trọ "{prop.name}" đang có {occupied_count} phòng đang thuê. '
-                             f'Không thể xóa khi còn khách đang ở (hãy chuyển sang INACTIVE).'
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        blocked = self._active_rooms_block_response(prop)
+        if blocked:
+            return blocked
 
         if prop.rooms.exists():
             prop.status = PropertyStatus.DELETED
@@ -206,6 +218,10 @@ class PropertyViewSet(viewsets.ModelViewSet):
                 {'error': f'Trạng thái không hợp lệ. Chọn một trong: {PropertyStatus.values}'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        if new_status == PropertyStatus.DELETED:
+            blocked = self._active_rooms_block_response(prop)
+            if blocked:
+                return blocked
         prop.status = new_status
         prop.save(update_fields=['status', 'updated_at'])
         return Response({
@@ -294,7 +310,8 @@ class PropertyViewSet(viewsets.ModelViewSet):
             status__in=[MaintenanceStatus.PENDING, MaintenanceStatus.IN_PROGRESS],
         ).count()
         data = {
-            'total_properties': properties.count(),
+            # "Tổng số tòa nhà" = cơ sở ĐANG VẬN HÀNH (ACTIVE); nhà tạm ngưng/đã xóa không tính.
+            'total_properties': properties.filter(status=PropertyStatus.ACTIVE).count(),
             'total_rooms': total_rooms,
             'available_rooms': counts.get(RoomStatus.AVAILABLE, 0),
             # "Đang thuê" gồm cả phòng OCCUPIED và FULL (đã đủ người).
@@ -330,6 +347,11 @@ class RoomViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = scoped_rooms(self.request.user).prefetch_related('maintenance_requests')
         p = self.request.query_params
+
+        # Phòng của nhà trọ đã xóa (DELETED) không được hiện trong các danh sách (tránh phòng mồ côi).
+        # Xem chi tiết/sửa theo id vẫn được giữ để tra cứu lịch sử.
+        if self.action in ('list', 'available_rooms', 'occupied_rooms', 'maintenance_rooms'):
+            queryset = queryset.exclude(property__status=PropertyStatus.DELETED)
 
         # V.5 Lọc theo nhà trọ & vị trí / khu vực
         property_id = _parse_number(p.get('property_id') or p.get('property'), int, 'property_id')
@@ -430,12 +452,21 @@ class RoomViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         """
         2.5 Xóa / ngừng sử dụng phòng:
-        Hạn chế xóa cứng nếu phòng đang thuê hoặc đã có lịch sử bảo trì -> chuyển sang INACTIVE.
+        - Chặn xóa (400) nếu phòng đang thuê (OCCUPIED/FULL/current_occupants>0), đã đặt cọc (RESERVED),
+          hoặc còn liên kết khách thuê / hợp đồng hiệu lực tại Tenant Service & Contract Service.
+        - Chuyển sang INACTIVE (Soft Delete) nếu đã có lịch sử bảo trì.
         """
         room = self.get_object()
-        if room.status in RENTED_STATUSES or room.current_occupants > 0:
+        if room.status in (*RENTED_STATUSES, RoomStatus.RESERVED) or room.current_occupants > 0:
             return Response(
-                {'error': f'Phòng {room.room_number} đang có người thuê, không thể xóa.'},
+                {'error': f'Phòng {room.room_number} đang có người thuê hoặc đã đặt cọc giữ chỗ, không thể xóa.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        external_reason = room_external_block_reason(request.user, room.id)
+        if external_reason:
+            return Response(
+                {'error': f'Phòng {room.room_number} {external_reason}, không thể xóa.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -508,6 +539,12 @@ class RoomViewSet(viewsets.ModelViewSet):
                 room.current_occupants = 1
             if room.current_occupants >= room.max_occupants:
                 new_status = RoomStatus.FULL
+        elif new_status == RoomStatus.INACTIVE:
+            if room.current_occupants > 0 or room.status in RENTED_STATUSES:
+                return Response(
+                    {'error': f'Phòng {room.room_number} đang có khách thuê, không thể chuyển sang ngừng hoạt động.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
         if tenant_name is not None:
             room.tenant_name = tenant_name

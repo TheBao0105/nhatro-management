@@ -6,7 +6,9 @@ from .models import (
     MaintenanceRequest,
     MaintenanceStatus,
     Property,
+    PropertyStatus,
     Room,
+    RoomStatus,
 )
 
 
@@ -149,13 +151,53 @@ class RoomSerializer(serializers.ModelSerializer):
             'updated_at',
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+        validators = []
 
     def validate(self, attrs):
+        prop = attrs.get('property', getattr(self.instance, 'property', None))
+        if prop is not None and prop.status == PropertyStatus.DELETED:
+            raise serializers.ValidationError(
+                {'property': f'Nhà trọ "{prop.name}" đã bị xóa, không thể thêm hoặc chuyển phòng vào.'}
+            )
+        room_num = (attrs.get('room_number', getattr(self.instance, 'room_number', '')) or '').strip()
+        dup_qs = Room.objects.filter(property=prop, room_number__iexact=room_num)
+        if self.instance is not None:
+            dup_qs = dup_qs.exclude(pk=self.instance.pk)
+        if dup_qs.exists():
+            raise serializers.ValidationError(
+                {'room_number': f'Phòng "{room_num}" đã tồn tại trong nhà trọ này.'}
+            )
+
+        floor = attrs.get('floor', getattr(self.instance, 'floor', 1))
+        if prop is not None and (floor < 1 or floor > prop.total_floors):
+            raise serializers.ValidationError(
+                {'floor': f'Số tầng ({floor}) phải từ 1 đến tổng số tầng của nhà trọ ({prop.total_floors}).'}
+            )
+
         max_occ = attrs.get('max_occupants', getattr(self.instance, 'max_occupants', 2))
         current = attrs.get('current_occupants', getattr(self.instance, 'current_occupants', 0))
         if current > max_occ:
             raise serializers.ValidationError(
                 {'current_occupants': f'Số người đang ở ({current}) vượt quá tối đa ({max_occ}).'})
+
+        new_status = attrs.get('status')
+        if new_status == RoomStatus.INACTIVE and self.instance is not None:
+            if self.instance.current_occupants > 0 or self.instance.status in (RoomStatus.OCCUPIED, RoomStatus.FULL):
+                raise serializers.ValidationError(
+                    {'status': f'Phòng {self.instance.room_number} đang có khách thuê, không thể chuyển sang ngừng hoạt động.'}
+                )
+        elif new_status == RoomStatus.AVAILABLE:
+            attrs['current_occupants'] = 0
+            attrs['tenant_name'] = ''
+            attrs['tenant_phone'] = ''
+        elif new_status == RoomStatus.FULL:
+            attrs['current_occupants'] = max_occ
+        elif new_status == RoomStatus.OCCUPIED:
+            if current <= 0:
+                current = 1
+                attrs['current_occupants'] = 1
+            if current >= max_occ:
+                attrs['status'] = RoomStatus.FULL
         return attrs
 
     def to_representation(self, instance):
@@ -220,6 +262,27 @@ class PropertySerializer(serializers.ModelSerializer):
             'updated_at',
         ]
         read_only_fields = ['id', 'owner_id', 'created_at', 'updated_at']
+
+    def validate_status(self, value):
+        if (
+            value == PropertyStatus.DELETED
+            and self.instance is not None
+            and self.instance.rooms.exclude(status=RoomStatus.INACTIVE).exists()
+        ):
+            raise serializers.ValidationError(
+                f'Nhà trọ "{self.instance.name}" còn phòng đang hoạt động. '
+                f'Hãy chuyển các phòng sang INACTIVE hoặc xóa phòng trước khi xóa nhà trọ.'
+            )
+        return value
+
+    def validate_total_floors(self, value):
+        if self.instance is not None:
+            over_floor = self.instance.rooms.filter(floor__gt=value).order_by('-floor').first()
+            if over_floor is not None:
+                raise serializers.ValidationError(
+                    f'Không thể giảm số tầng xuống {value} vì phòng "{over_floor.room_number}" đang ở tầng {over_floor.floor}.'
+                )
+        return value
 
     def create(self, validated_data):
         # owner_id luôn lấy từ claim user_id của JWT (Identity Service), không nhận từ client.

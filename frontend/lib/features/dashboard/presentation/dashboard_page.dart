@@ -62,9 +62,9 @@ class DashboardPage extends StatelessWidget {
     final stats = [
       if (isAdmin) const _AccountCountCard(),
       StatCard(
-        title: 'Tổng số tòa nhà',
+        title: 'Tòa nhà đang vận hành',
         value: n(s?.totalProperties),
-        subtitle: 'Cơ sở đang vận hành',
+        subtitle: 'Không tính nhà tạm ngưng / đã xóa',
         icon: Icons.apartment_rounded,
         tone: StatIconTone.primary,
         onTap: () => context.go('/properties'),

@@ -163,7 +163,7 @@ void main() {
   testWidgets('1. API thành công: hiển thị đúng số liệu thật, biểu đồ tỷ lệ phòng và hóa đơn', (tester) async {
     await pumpDashboard(tester);
 
-    expect(kpi(tester, 'Tổng số tòa nhà'), '2');
+    expect(kpi(tester, 'Tòa nhà đang vận hành'), '2');
     expect(kpi(tester, 'Tổng số phòng'), '5');
     expect(kpi(tester, 'Phòng đang thuê'), '3');
     expect(kpi(tester, 'Phòng còn trống'), '1');
@@ -308,7 +308,7 @@ void main() {
         }));
     await pumpDashboard(tester);
 
-    expect(kpi(tester, 'Tổng số tòa nhà'), '0');
+    expect(kpi(tester, 'Tòa nhà đang vận hành'), '0');
     expect(kpi(tester, 'Tổng số phòng'), '0');
     expect(kpi(tester, 'Phòng đang thuê'), '0');
     expect(kpi(tester, 'Doanh thu dự kiến / tháng'), '0 đ');

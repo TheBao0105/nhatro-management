@@ -1,0 +1,1681 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites name="Service 2 - Property &amp; Room Optimized Test Suite (72 Unit + 135 API = 207 tests)" tests="207" failures="0" errors="0" skipped="0" time="1.3308" timestamp="2026-11-22T10:42:31">
+  <testsuite name="services.property_service.testing.api_tests.test_maintenance_api" tests="4" failures="0" errors="0" skipped="0" time="0.1365">
+    <testcase classname="services.property_service.testing.api_tests.test_maintenance_api.MaintenanceAPIPipelineTests" name="S2-MAPI-003: test_create_maintenance_without_locking_room" time="0.05704">
+      <properties>
+        <property name="test_id" value="S2-MAPI-003"/>
+        <property name="legacy_id" value="S2-LEG-020"/>
+        <property name="sprint_scope" value="Ngoài Sprint 1 (Maintenance)"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="[Ngoài Sprint 1] [Legacy S2-LEG-020] HTTP POST /api/maintenance/ với set_room_maintenance=False giữ phòng ở trạng thái AVAILABLE"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_maintenance_api.MaintenanceAPIPipelineTests" name="S2-MAPI-002: test_maintenance_start_complete_restores_previous_status" time="0.02300">
+      <properties>
+        <property name="test_id" value="S2-MAPI-002"/>
+        <property name="legacy_id" value="S2-LEG-019"/>
+        <property name="sprint_scope" value="Ngoài Sprint 1 (Maintenance)"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="[Ngoài Sprint 1] [Legacy S2-LEG-019] HTTP POST /start/ và /complete/ khôi phục trạng thái phòng OCCUPIED ban đầu"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_maintenance_api.MaintenanceAPIPipelineTests" name="S2-MAPI-001: test_maintenance_workflow_and_history" time="0.03354">
+      <properties>
+        <property name="test_id" value="S2-MAPI-001"/>
+        <property name="legacy_id" value="S2-LEG-018"/>
+        <property name="sprint_scope" value="Ngoài Sprint 1 (Maintenance)"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="[Ngoài Sprint 1] [Legacy S2-LEG-018] Luồng HTTP đầy đủ POST /api/maintenance/ -&gt; update_status -&gt; record_cost -&gt; complete -&gt; cancel (400) -&gt; history"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_maintenance_api.MaintenanceAPIPipelineTests" name="S2-MAPI-004: test_tenant_can_report_but_not_manage_maintenance" time="0.02288">
+      <properties>
+        <property name="test_id" value="S2-MAPI-004"/>
+        <property name="legacy_id" value="S2-LEG-021"/>
+        <property name="sprint_scope" value="Ngoài Sprint 1 (Maintenance)"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="[Ngoài Sprint 1] [Legacy S2-LEG-021] TENANT tạo và hủy được yêu cầu bảo trì của mình nhưng bị chặn 403 trên complete/start/record_cost/update_status"/>
+      </properties>
+    </testcase>
+  </testsuite>
+  <testsuite name="services.property_service.testing.api_tests.test_permissions_api" tests="26" failures="0" errors="0" skipped="0" time="0.1919">
+    <testcase classname="services.property_service.testing.api_tests.test_permissions_api.JwtAuthenticationApiTests" name="S2-SEC-011: test_expired_token_returns_401" time="0.00338">
+      <properties>
+        <property name="test_id" value="S2-SEC-011"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="JWT hết hạn | Data: access token exp trong quá khứ | Expected: 401"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_permissions_api.JwtAuthenticationApiTests" name="S2-SEC-012: test_malformed_token_returns_401" time="0.00671">
+      <properties>
+        <property name="test_id" value="S2-SEC-012"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="JWT sai định dạng | Data: 'not.a.jwt', 'abc', ký tự lạ | Expected: 401"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_permissions_api.JwtAuthenticationApiTests" name="S2-SEC-009: test_no_authorization_header_returns_401" time="0.00257">
+      <properties>
+        <property name="test_id" value="S2-SEC-009"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Không có Authorization header | Data: GET list/detail properties &amp; rooms | Expected: 401 cho tất cả"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_permissions_api.JwtAuthenticationApiTests" name="S2-SEC-015: test_refresh_token_cannot_be_used_as_access_token" time="0.00300">
+      <properties>
+        <property name="test_id" value="S2-SEC-015"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Dùng refresh token làm access | Data: RefreshToken hợp lệ | Expected: 401"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_permissions_api.JwtAuthenticationApiTests" name="S2-SEC-018: test_signing_key_is_configured" time="0.00153">
+      <properties>
+        <property name="test_id" value="S2-SEC-018"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Khóa ký JWT dùng chung được cấu hình | Data: settings.SIMPLE_JWT | Expected: SIGNING_KEY khác rỗng và dùng claim user_id"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_permissions_api.JwtAuthenticationApiTests" name="S2-SEC-013: test_token_with_wrong_signature_returns_401" time="0.00297">
+      <properties>
+        <property name="test_id" value="S2-SEC-013"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="JWT ký bằng khóa khác | Data: HS256 với 'wrong-key' | Expected: 401"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_permissions_api.JwtAuthenticationApiTests" name="S2-SEC-016: test_token_without_user_id_claim_returns_401" time="0.00284">
+      <properties>
+        <property name="test_id" value="S2-SEC-016"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="JWT thiếu claim user_id | Data: access token không có user_id | Expected: 401"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_permissions_api.JwtAuthenticationApiTests" name="S2-SEC-010: test_unauthenticated_write_returns_401_and_creates_nothing" time="0.00232">
+      <properties>
+        <property name="test_id" value="S2-SEC-010"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Ghi dữ liệu khi chưa đăng nhập | Data: POST/PATCH/DELETE không token | Expected: 401; DB không đổi"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_permissions_api.JwtAuthenticationApiTests" name="S2-SEC-017: test_valid_token_is_accepted" time="0.01071">
+      <properties>
+        <property name="test_id" value="S2-SEC-017"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="JWT hợp lệ | Data: access token landlord 101 | Expected: 200 trên list/detail"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_permissions_api.JwtAuthenticationApiTests" name="S2-SEC-014: test_wrong_scheme_and_empty_bearer_return_401" time="0.00384">
+      <properties>
+        <property name="test_id" value="S2-SEC-014"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Sai scheme / Bearer rỗng | Data: 'Token &lt;jwt&gt;', 'Bearer ' | Expected: 401"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_permissions_api.RoleAccessApiTests" name="S2-SEC-019: test_admin_sees_all_and_can_write" time="0.02499">
+      <properties>
+        <property name="test_id" value="S2-SEC-019"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="ADMIN toàn quyền | Data: admin xem list + tạo nhà | Expected: thấy 2 nhà, 3 phòng; POST 201"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_permissions_api.RoleAccessApiTests" name="S2-SEC-021: test_landlord_cannot_access_other_landlord_data" time="0.01721">
+      <properties>
+        <property name="test_id" value="S2-SEC-021"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="LANDLORD không truy cập dữ liệu chủ khác | Data: GET/PATCH/DELETE/actions trên nhà &amp; phòng chủ 202 | Expected: tất cả 404"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_permissions_api.RoleAccessApiTests" name="S2-SEC-022: test_landlord_lists_exclude_other_landlord" time="0.01337">
+      <properties>
+        <property name="test_id" value="S2-SEC-022"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Danh sách LANDLORD không chứa dữ liệu chủ khác | Data: list properties/rooms | Expected: chỉ 'MINE' và 2 phòng"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_permissions_api.RoleAccessApiTests" name="S2-SEC-027: test_legacy_staff_role_has_no_management_rights" time="0.00479">
+      <properties>
+        <property name="test_id" value="S2-SEC-027"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="STAFF (legacy) bị coi là quyền hẹp nhất | Data: STAFF GET/POST/stats | Expected: không thấy dữ liệu, POST 403, stats 403"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_permissions_api.RoleAccessApiTests" name="S2-SEC-034: test_maintenance_write_endpoints_locked_for_every_role_in_sprint1" time="0.01652">
+      <properties>
+        <property name="test_id" value="S2-SEC-034"/>
+        <property name="legacy_id" value="S2-LEG-033"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="[Legacy S2-LEG-033] Ma trận SprintFeatureLock chặn toàn bộ 9 write endpoints bảo trì (403) cho LANDLORD, ADMIN, TENANT và 401 cho anonymous"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_permissions_api.RoleAccessApiTests" name="S2-SEC-032: test_moved_out_tenant_loses_access" time="0.00397">
+      <properties>
+        <property name="test_id" value="S2-SEC-032"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Người thuê đã chuyển đi | Data: liên kết status=MOVED_OUT | Expected: rooms rỗng"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_permissions_api.RoleAccessApiTests" name="S2-SEC-020: test_superuser_flag_grants_admin_access" time="0.01129">
+      <properties>
+        <property name="test_id" value="S2-SEC-020"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Token role TENANT nhưng is_superuser | Data: is_superuser=True | Expected: thấy toàn hệ thống như ADMIN"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_permissions_api.RoleAccessApiTests" name="S2-SEC-025: test_tenant_cannot_see_revenue_stats" time="0.00577">
+      <properties>
+        <property name="test_id" value="S2-SEC-025"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Thống kê doanh thu chỉ dành cho manager | Data: TENANT gọi stats; summary | Expected: stats=403; summary không có estimated_monthly_revenue"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_permissions_api.RoleAccessApiTests" name="S2-SEC-024: test_tenant_cannot_write_anything" time="0.00647">
+      <properties>
+        <property name="test_id" value="S2-SEC-024"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="TENANT bị chặn mọi thao tác ghi | Data: POST/PATCH/DELETE properties &amp; rooms, đổi status | Expected: 403; dữ liệu không đổi"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_permissions_api.RoleAccessApiTests" name="S2-SEC-031: test_tenant_lookup_forwards_users_own_jwt" time="0.00583">
+      <properties>
+        <property name="test_id" value="S2-SEC-031"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Gọi Tenant Service bằng JWT của chính người dùng | Data: mock requests.get | Expected: gọi đúng URL /api/tenants/links/ với header Bearer"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_permissions_api.RoleAccessApiTests" name="S2-SEC-023: test_tenant_sees_only_rented_room_and_hides_pii" time="0.01430">
+      <properties>
+        <property name="test_id" value="S2-SEC-023"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="TENANT chỉ xem phòng đang thuê, ẩn PII | Data: thuê phòng '1' | Expected: list=1 phòng; không có tenant_name/tenant_phone; phòng khác 404"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_permissions_api.RoleAccessApiTests" name="S2-SEC-029: test_tenant_service_down_fails_closed_with_503" time="0.00714">
+      <properties>
+        <property name="test_id" value="S2-SEC-029"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Tenant Service ngừng hoạt động | Data: requests.get ném ConnectionError | Expected: TENANT nhận 503, không lộ dữ liệu; LANDLORD không bị ảnh hưởng"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_permissions_api.RoleAccessApiTests" name="S2-SEC-030: test_tenant_service_invalid_payload_fails_closed" time="0.00311">
+      <properties>
+        <property name="test_id" value="S2-SEC-030"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Tenant Service trả dữ liệu hỏng | Data: JSON không phải list | Expected: 503"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_permissions_api.RoleAccessApiTests" name="S2-SEC-033: test_tenant_without_active_link_sees_nothing_across_endpoints" time="0.00808">
+      <properties>
+        <property name="test_id" value="S2-SEC-033"/>
+        <property name="legacy_id" value="S2-LEG-029"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="[Legacy S2-LEG-029] TENANT có liên kết MOVED_OUT hoặc rỗng bị chặn trên cả /api/rooms/, /api/properties/ và /api/rooms/{id}/ (404)"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_permissions_api.RoleAccessApiTests" name="S2-SEC-026: test_tenant_without_active_rental_sees_nothing" time="0.00448">
+      <properties>
+        <property name="test_id" value="S2-SEC-026"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="TENANT chưa thuê phòng nào | Data: danh sách phòng thuê rỗng | Expected: 200, list rỗng cho properties &amp; rooms"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_permissions_api.RoleAccessApiTests" name="S2-SEC-028: test_unknown_role_claim_is_treated_as_tenant" time="0.00471">
+      <properties>
+        <property name="test_id" value="S2-SEC-028"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Role lạ trong JWT | Data: role='HACKER' | Expected: bị xử lý như TENANT — POST 403, không thấy dữ liệu"/>
+      </properties>
+    </testcase>
+  </testsuite>
+  <testsuite name="services.property_service.testing.api_tests.test_search_filter" tests="42" failures="0" errors="0" skipped="0" time="0.3408">
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.MaintenanceReadFilterTests" name="S2-FLT-042: test_filter_maintenance_history_by_room_and_property" time="0.00587">
+      <properties>
+        <property name="test_id" value="S2-FLT-042"/>
+        <property name="sprint_scope" value="Ngoài Sprint 1 (Maintenance)"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="[Ngoài Sprint 1] Lọc GET /api/maintenance-history/ theo room_id và property_id | Data: 2 bản ghi lịch sử ở 2 phòng/nhà trọ | Expected: 200, trả đúng 1 bản ghi khớp"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.MaintenanceReadFilterTests" name="S2-FLT-041: test_filter_maintenance_requests_and_detail_history" time="0.01530">
+      <properties>
+        <property name="test_id" value="S2-FLT-041"/>
+        <property name="sprint_scope" value="Ngoài Sprint 1 (Maintenance)"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="[Ngoài Sprint 1] Lọc GET /api/maintenance/ theo room_id, property_id, status, priority, search &amp; xem /history/ | Data: 2 yêu cầu BT0101, BT0202 | Expected: 200, trả đúng bản ghi khớp bộ lọc"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.PropertySearchFilterTests" name="S2-FLT-040: test_combined_property_filters" time="0.00467">
+      <properties>
+        <property name="test_id" value="S2-FLT-040"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Kết hợp tìm kiếm + lọc nhà | Data: search=house &amp; status=ACTIVE &amp; district=Quận 7 | Expected: [HH]"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.PropertySearchFilterTests" name="S2-FLT-033: test_default_list_hides_deleted" time="0.01395">
+      <properties>
+        <property name="test_id" value="S2-FLT-033"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Danh sách mặc định | Data: 4 nhà (1 DELETED) | Expected: HH, HM, PAUSE"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.PropertySearchFilterTests" name="S2-FLT-038: test_filter_property_by_district_and_ward" time="0.01419">
+      <properties>
+        <property name="test_id" value="S2-FLT-038"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Lọc nhà theo quận / phường | Data: district=Quận 7; ward=Phường 25 | Expected: [HH]; [HM]"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.PropertySearchFilterTests" name="S2-FLT-036: test_filter_property_by_status" time="0.01530">
+      <properties>
+        <property name="test_id" value="S2-FLT-036"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Lọc nhà theo trạng thái | Data: ACTIVE, INACTIVE, DELETED | Expected: [HH,HM], [PAUSE], [OLD]"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.PropertySearchFilterTests" name="S2-FLT-037: test_filter_property_status_all_and_include_deleted" time="0.01665">
+      <properties>
+        <property name="test_id" value="S2-FLT-037"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="status=ALL và include_deleted=true | Data: tham số | Expected: cả 4 nhà (kể cả DELETED)"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.PropertySearchFilterTests" name="S2-FLT-039: test_filter_property_unknown_status_returns_empty" time="0.00148">
+      <properties>
+        <property name="test_id" value="S2-FLT-039"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Lọc nhà theo trạng thái lạ | Data: status=XYZ | Expected: []"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.PropertySearchFilterTests" name="S2-FLT-034: test_search_property_by_each_field" time="0.02809">
+      <properties>
+        <property name="test_id" value="S2-FLT-034"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Tìm nhà theo tên/mã/địa chỉ/phường/quận/thành phố | Data: hoa; hh; Gia Trí; Tân Phong; Quận 7; Hồ Chí Minh | Expected: HM; HH; HM; HH; HH; HH+HM+PAUSE (cả 3 nhà chưa xóa có city mặc định)"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.PropertySearchFilterTests" name="S2-FLT-035: test_search_property_no_result" time="0.00168">
+      <properties>
+        <property name="test_id" value="S2-FLT-035"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Tìm nhà không có kết quả | Data: search=zzzz | Expected: []"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomFilterTests" name="S2-FLT-021: test_combined_filters" time="0.00481">
+      <properties>
+        <property name="test_id" value="S2-FLT-021"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Kết hợp nhiều điều kiện | Data: property_id=p1 &amp; status=AVAILABLE &amp; min_price=3000000 | Expected: A201"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomFilterTests" name="S2-FLT-023: test_combined_filters_without_results" time="0.00178">
+      <properties>
+        <property name="test_id" value="S2-FLT-023"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Kết hợp điều kiện mâu thuẫn | Data: status=FULL &amp; max_price=1000000 | Expected: []"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomFilterTests" name="S2-FLT-022: test_combined_search_and_filters" time="0.00436">
+      <properties>
+        <property name="test_id" value="S2-FLT-022"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Kết hợp tìm kiếm + lọc | Data: search=house &amp; floor=2 &amp; max_price=6000000 | Expected: B201"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomFilterTests" name="S2-FLT-019: test_filter_area_range" time="0.01472">
+      <properties>
+        <property name="test_id" value="S2-FLT-019"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Lọc diện tích | Data: min_area=25; max_area=22; 22..30 | Expected: [A102,A201,B201]; [A101,B101]; [A102,A201,B101]"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomFilterTests" name="S2-FLT-010: test_filter_by_district_ward_address" time="0.01375">
+      <properties>
+        <property name="test_id" value="S2-FLT-010"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Lọc theo quận / phường / địa chỉ | Data: district=Quận 7; ward=Tân Phong; address=Gia Trí | Expected: B*, B*, A*"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomFilterTests" name="S2-FLT-011: test_filter_by_floor" time="0.00432">
+      <properties>
+        <property name="test_id" value="S2-FLT-011"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Lọc theo tầng | Data: floor=2 | Expected: A201, B201"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomFilterTests" name="S2-FLT-025: test_filter_by_other_landlords_property_returns_empty" time="0.00278">
+      <properties>
+        <property name="test_id" value="S2-FLT-025"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Lọc theo nhà của chủ khác | Data: property_id nhà owner 202 | Expected: [] (không rò rỉ)"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomFilterTests" name="S2-FLT-009: test_filter_by_property_id_and_alias" time="0.01086">
+      <properties>
+        <property name="test_id" value="S2-FLT-009"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Lọc theo nhà trọ | Data: property_id và property | Expected: 3 phòng của p1 cho cả hai tham số"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomFilterTests" name="S2-FLT-012: test_filter_by_status_case_insensitive" time="0.01242">
+      <properties>
+        <property name="test_id" value="S2-FLT-012"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Lọc theo trạng thái | Data: AVAILABLE, available, FULL | Expected: [A101,A201] (cả hoa/thường), [B201]"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomFilterTests" name="S2-FLT-020: test_filter_max_occupants_exact" time="0.00469">
+      <properties>
+        <property name="test_id" value="S2-FLT-020"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Lọc theo số người tối đa (khớp chính xác) | Data: max_occupants=2 | Expected: A101, B101, B201"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomFilterTests" name="S2-FLT-016: test_filter_max_price_is_inclusive" time="0.00549">
+      <properties>
+        <property name="test_id" value="S2-FLT-016"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Lọc giá tối đa (biên bao gồm) | Data: max_price=3000000 | Expected: A101, A102, B101"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomFilterTests" name="S2-FLT-015: test_filter_min_price_is_inclusive" time="0.00537">
+      <properties>
+        <property name="test_id" value="S2-FLT-015"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Lọc giá tối thiểu (biên bao gồm) | Data: min_price=3000000 | Expected: A102 (=3tr), A201, B201"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomFilterTests" name="S2-FLT-017: test_filter_price_range" time="0.00498">
+      <properties>
+        <property name="test_id" value="S2-FLT-017"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Lọc khoảng giá | Data: min=2500000, max=4000000 | Expected: A102, A201, B101"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomFilterTests" name="S2-FLT-018: test_filter_price_range_without_results" time="0.00315">
+      <properties>
+        <property name="test_id" value="S2-FLT-018"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Khoảng giá không có phòng | Data: min=7000000 | Expected: []; min&gt;max cũng []"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomFilterTests" name="S2-FLT-013: test_filter_status_all_returns_everything" time="0.00635">
+      <properties>
+        <property name="test_id" value="S2-FLT-013"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="status=ALL | Data: ALL | Expected: 5 phòng"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomFilterTests" name="S2-FLT-014: test_filter_status_without_matches_returns_empty" time="0.00295">
+      <properties>
+        <property name="test_id" value="S2-FLT-014"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Lọc trạng thái không có phòng | Data: RESERVED / INACTIVE | Expected: []"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomFilterTests" name="S2-FLT-024: test_invalid_numeric_filters_return_400" time="0.00433">
+      <properties>
+        <property name="test_id" value="S2-FLT-024"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Tham số lọc số không hợp lệ | Data: min_price/max_price/min_area/max_area/floor/max_occupants/property_id='abc' | Expected: 400 (không phải 500)"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomSearchTests" name="S2-FLT-004: test_search_by_district_ward_address" time="0.01637">
+      <properties>
+        <property name="test_id" value="S2-FLT-004"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Tìm theo quận / phường / địa chỉ | Data: 'Quận 7', 'Phường 25', 'Gia Trí' | Expected: phòng B*, A*, A* tương ứng"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomSearchTests" name="S2-FLT-003: test_search_by_property_name" time="0.00472">
+      <properties>
+        <property name="test_id" value="S2-FLT-003"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Tìm theo tên nhà trọ | Data: search=happy | Expected: B101, B201"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomSearchTests" name="S2-FLT-002: test_search_by_room_code" time="0.00435">
+      <properties>
+        <property name="test_id" value="S2-FLT-002"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Tìm theo mã phòng | Data: search=hm-a201 | Expected: A201"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomSearchTests" name="S2-FLT-001: test_search_by_room_number_partial_case_insensitive" time="0.00462">
+      <properties>
+        <property name="test_id" value="S2-FLT-001"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Tìm theo tên/số phòng (một phần, không phân biệt hoa thường) | Data: search=a10 | Expected: A101, A102"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomSearchTests" name="S2-FLT-006: test_search_by_tenant_name_for_manager" time="0.00407">
+      <properties>
+        <property name="test_id" value="S2-FLT-006"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Chủ trọ tìm theo tên người thuê | Data: search='Nguyễn Văn A' | Expected: A102"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomSearchTests" name="S2-FLT-008: test_search_empty_string_returns_all" time="0.00752">
+      <properties>
+        <property name="test_id" value="S2-FLT-008"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="search rỗng | Data: search= | Expected: toàn bộ 5 phòng"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomSearchTests" name="S2-FLT-005: test_search_no_result_returns_empty_list" time="0.00208">
+      <properties>
+        <property name="test_id" value="S2-FLT-005"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Tìm không có kết quả | Data: search=zzzzzz | Expected: 200, []"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomSearchTests" name="S2-FLT-007: test_tenant_cannot_search_by_other_tenant_name" time="0.00279">
+      <properties>
+        <property name="test_id" value="S2-FLT-007"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="TENANT không tìm theo tên người thuê | Data: TENANT thuê A102, search='Nguyễn Văn A' | Expected: [] (không rò rỉ qua tìm kiếm)"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomSortTests" name="S2-FLT-030: test_ordering_alias_parameter" time="0.01180">
+      <properties>
+        <property name="test_id" value="S2-FLT-030"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Tham số alias ordering | Data: ordering=price_desc | Expected: giống sort=price_desc"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomSortTests" name="S2-FLT-027: test_sort_area" time="0.01206">
+      <properties>
+        <property name="test_id" value="S2-FLT-027"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Sắp xếp theo diện tích | Data: area_asc / area_desc | Expected: tăng dần / giảm dần"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomSortTests" name="S2-FLT-032: test_sort_combined_with_filter" time="0.00412">
+      <properties>
+        <property name="test_id" value="S2-FLT-032"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Sắp xếp kết hợp lọc | Data: status=AVAILABLE &amp; sort=price_desc | Expected: A201, A101"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomSortTests" name="S2-FLT-029: test_sort_created" time="0.01211">
+      <properties>
+        <property name="test_id" value="S2-FLT-029"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Sắp xếp theo ngày tạo | Data: created_asc / created_desc | Expected: thứ tự tạo / đảo ngược"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomSortTests" name="S2-FLT-028: test_sort_name" time="0.01180">
+      <properties>
+        <property name="test_id" value="S2-FLT-028"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Sắp xếp theo tên phòng | Data: name_asc / name_desc | Expected: A101..B201 và ngược lại"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomSortTests" name="S2-FLT-026: test_sort_price" time="0.01162">
+      <properties>
+        <property name="test_id" value="S2-FLT-026"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Sắp xếp theo giá | Data: sort=price_asc / price_desc | Expected: tăng dần / giảm dần"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_search_filter.RoomSortTests" name="S2-FLT-031: test_unknown_sort_falls_back_to_default_order" time="0.00652">
+      <properties>
+        <property name="test_id" value="S2-FLT-031"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Giá trị sort không hợp lệ | Data: sort=bogus | Expected: 200, thứ tự mặc định (nhà, tầng, tên phòng)"/>
+      </properties>
+    </testcase>
+  </testsuite>
+  <testsuite name="services.property_service.testing.api_tests.test_views" tests="63" failures="0" errors="0" skipped="0" time="0.3426">
+    <testcase classname="services.property_service.testing.api_tests.test_views.PropertyApiTests" name="S2-API-009: test_create_property_duplicate_code_returns_400" time="0.00301">
+      <properties>
+        <property name="test_id" value="S2-API-009"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="POST code trùng | Data: code='NT100' đã có | Expected: 400, lỗi 'code'"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.PropertyApiTests" name="S2-API-008: test_create_property_invalid_status_returns_400" time="0.00255">
+      <properties>
+        <property name="test_id" value="S2-API-008"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="POST status sai | Data: status='BOGUS' | Expected: 400, lỗi 'status'"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.PropertyApiTests" name="S2-API-007: test_create_property_missing_fields_returns_400" time="0.00290">
+      <properties>
+        <property name="test_id" value="S2-API-007"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="POST thiếu trường bắt buộc | Data: {} | Expected: 400, lỗi 'name' và 'address'; không tạo bản ghi"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.PropertyApiTests" name="S2-API-006: test_create_property_success" time="0.00609">
+      <properties>
+        <property name="test_id" value="S2-API-006"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="POST /api/properties/ hợp lệ | Data: name, address, district + owner_id=999 | Expected: 201, owner_id=101 (từ JWT), code 'NT...', lưu DB"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.PropertyApiTests" name="S2-API-015: test_delete_empty_property_is_hard_delete" time="0.00474">
+      <properties>
+        <property name="test_id" value="S2-API-015"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="DELETE nhà không có phòng | Data: nhà trống | Expected: 200, soft_deleted=False, bản ghi bị xóa"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.PropertyApiTests" name="S2-API-019: test_delete_nonexistent_property_returns_404" time="0.00212">
+      <properties>
+        <property name="test_id" value="S2-API-019"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="DELETE id không tồn tại | Data: id=999999 | Expected: 404"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.PropertyApiTests" name="S2-API-018: test_delete_property_with_full_rooms_is_blocked" time="0.00369">
+      <properties>
+        <property name="test_id" value="S2-API-018"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="DELETE nhà có phòng FULL | Data: phòng FULL | Expected: 400 (FULL cũng là đang thuê)"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.PropertyApiTests" name="S2-API-017: test_delete_property_with_rented_rooms_is_blocked" time="0.00372">
+      <properties>
+        <property name="test_id" value="S2-API-017"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="DELETE nhà còn phòng đang thuê | Data: phòng OCCUPIED | Expected: 400 kèm 'error'; nhà vẫn ACTIVE"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.PropertyApiTests" name="S2-API-016: test_delete_property_with_rooms_is_soft_delete" time="0.00774">
+      <properties>
+        <property name="test_id" value="S2-API-016"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="DELETE nhà có phòng | Data: nhà có 1 phòng AVAILABLE | Expected: 200, soft_deleted=True, status=DELETED, phòng còn nguyên"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.PropertyApiTests" name="S2-API-002: test_list_excludes_soft_deleted_by_default" time="0.00717">
+      <properties>
+        <property name="test_id" value="S2-API-002"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Danh sách ẩn nhà đã xóa mềm | Data: 1 nhà DELETED | Expected: chỉ trả nhà chưa DELETED"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.PropertyApiTests" name="S2-API-001: test_list_returns_own_properties_with_expected_structure" time="0.00712">
+      <properties>
+        <property name="test_id" value="S2-API-001"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="GET /api/properties/ | Data: landlord 101 có 1 nhà | Expected: 200, list 1 phần tử có id/code/name/full_address/status/total_rooms_count"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.PropertyApiTests" name="S2-API-013: test_patch_nonexistent_property_returns_404" time="0.00219">
+      <properties>
+        <property name="test_id" value="S2-API-013"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="PATCH id không tồn tại | Data: id=999999 | Expected: 404"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.PropertyApiTests" name="S2-API-014: test_patch_property_invalid_status_returns_400" time="0.00376">
+      <properties>
+        <property name="test_id" value="S2-API-014"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="PATCH status sai | Data: 'BOGUS' | Expected: 400; DB giữ ACTIVE"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.PropertyApiTests" name="S2-API-012: test_patch_property_persists" time="0.00892">
+      <properties>
+        <property name="test_id" value="S2-API-012"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="PATCH một phần | Data: name, total_floors=4 | Expected: 200, DB cập nhật, trường khác giữ nguyên"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.PropertyApiTests" name="S2-API-063: test_property_rooms_action_filters_by_room_status" time="0.00645">
+      <properties>
+        <property name="test_id" value="S2-API-063"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="GET /properties/{id}/rooms/?status=occupied | Data: 2 phòng (AVAILABLE, OCCUPIED) | Expected: 200, chỉ phòng '102'"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.PropertyApiTests" name="S2-API-024: test_property_rooms_action_lists_rooms" time="0.00691">
+      <properties>
+        <property name="test_id" value="S2-API-024"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="GET /properties/{id}/rooms/ | Data: 2 phòng (AVAILABLE, OCCUPIED) | Expected: 200, trả đủ 2 phòng của nhà"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.PropertyApiTests" name="S2-API-026: test_property_stats_empty_property_has_zero_rate" time="0.00366">
+      <properties>
+        <property name="test_id" value="S2-API-026"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="stats nhà chưa có phòng | Data: nhà trống | Expected: total=0, occupancy=0.0, doanh thu=0"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.PropertyApiTests" name="S2-API-025: test_property_stats_values" time="0.00507">
+      <properties>
+        <property name="test_id" value="S2-API-025"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="GET /properties/{id}/stats/ | Data: AVAILABLE 3tr, OCCUPIED 4tr, FULL 5tr, MAINTENANCE | Expected: total=4, occupancy=50.0, doanh thu=9,000,000"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.PropertyApiTests" name="S2-API-010: test_put_property_full_update" time="0.00883">
+      <properties>
+        <property name="test_id" value="S2-API-010"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="PUT cập nhật đầy đủ | Data: name, address mới | Expected: 200, DB cập nhật"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.PropertyApiTests" name="S2-API-011: test_put_property_missing_required_returns_400" time="0.00412">
+      <properties>
+        <property name="test_id" value="S2-API-011"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="PUT thiếu address | Data: chỉ name | Expected: 400, lỗi 'address'; DB không đổi"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.PropertyApiTests" name="S2-API-004: test_retrieve_nonexistent_property_returns_404" time="0.00194">
+      <properties>
+        <property name="test_id" value="S2-API-004"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Property không tồn tại | Data: id=999999 | Expected: 404"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.PropertyApiTests" name="S2-API-003: test_retrieve_property" time="0.00745">
+      <properties>
+        <property name="test_id" value="S2-API-003"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="GET /api/properties/{id}/ | Data: id hợp lệ | Expected: 200, đúng id/name, rooms lồng nhau 1 phòng"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.PropertyApiTests" name="S2-API-005: test_retrieve_soft_deleted_property_still_works" time="0.00693">
+      <properties>
+        <property name="test_id" value="S2-API-005"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Xem chi tiết nhà đã xóa mềm | Data: nhà DELETED | Expected: 200, status=DELETED (chỉ list mới ẩn)"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.PropertyApiTests" name="S2-API-027: test_room_matrix_groups_by_floor" time="0.00753">
+      <properties>
+        <property name="test_id" value="S2-API-027"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="GET /properties/{id}/room_matrix/ | Data: phòng tầng 2, tầng 1 | Expected: floors sắp tăng dần ('Tầng 1','Tầng 2'), status_summary đủ 6 trạng thái, total_rooms đúng"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.PropertyApiTests" name="S2-API-028: test_summary_counts_for_landlord_scope" time="0.00643">
+      <properties>
+        <property name="test_id" value="S2-API-028"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="GET /properties/summary/ | Data: 4 phòng AVAILABLE/OCCUPIED/FULL/MAINTENANCE + nhà người khác | Expected: total_rooms=4 (chỉ của mình), occupied=2, full=1, maintenance=1, rate=50.0"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.PropertyApiTests" name="S2-API-029: test_summary_excludes_soft_deleted_properties" time="0.00460">
+      <properties>
+        <property name="test_id" value="S2-API-029"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="summary bỏ qua nhà đã xóa mềm | Data: nhà DELETED có phòng | Expected: không tính vào total_properties/total_rooms"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.PropertyApiTests" name="S2-API-021: test_update_status_accepts_lowercase" time="0.00714">
+      <properties>
+        <property name="test_id" value="S2-API-021"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="update_status chấp nhận chữ thường | Data: 'inactive' | Expected: 200, lưu 'INACTIVE'"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.PropertyApiTests" name="S2-API-020: test_update_status_action_persists" time="0.00787">
+      <properties>
+        <property name="test_id" value="S2-API-020"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="POST update_status hợp lệ | Data: status='INACTIVE' | Expected: 200, DB INACTIVE, message + property trong response"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.PropertyApiTests" name="S2-API-022: test_update_status_invalid_or_missing_returns_400" time="0.00484">
+      <properties>
+        <property name="test_id" value="S2-API-022"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="update_status sai / thiếu | Data: 'BOGUS' và thiếu status | Expected: 400, 'error'; DB không đổi"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.PropertyApiTests" name="S2-API-023: test_update_status_nonexistent_returns_404" time="0.00187">
+      <properties>
+        <property name="test_id" value="S2-API-023"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="update_status id không tồn tại | Data: id=999999 | Expected: 404"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-060: test_available_occupied_maintenance_lists" time="0.01403">
+      <properties>
+        <property name="test_id" value="S2-API-060"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Danh sách phòng theo trạng thái | Data: AVAILABLE, OCCUPIED, FULL, MAINTENANCE | Expected: /available/=1, /occupied/=2 (OCCUPIED+FULL), /maintenance/=1"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-059: test_check_rentable_nonexistent_returns_404" time="0.00267">
+      <properties>
+        <property name="test_id" value="S2-API-059"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="check_rentable phòng không tồn tại | Data: id=999999 | Expected: 404"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-058: test_check_rentable_response_structure_and_values" time="0.00461">
+      <properties>
+        <property name="test_id" value="S2-API-058"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="GET /rooms/{id}/check_rentable/ | Data: phòng trống rồi chuyển OCCUPIED | Expected: can_rent True-&gt;False, có room_id/code/property_name/reason/rent_price/area"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-035: test_create_room_in_other_landlords_property_returns_400" time="0.00394">
+      <properties>
+        <property name="test_id" value="S2-API-035"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="POST phòng vào nhà của chủ khác | Data: property của owner 202 | Expected: 400 lỗi 'property'; không tạo phòng"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-036: test_create_room_invalid_values_return_400" time="0.00831">
+      <properties>
+        <property name="test_id" value="S2-API-036"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="POST phòng dữ liệu sai | Data: status='BOGUS'; current(3)&gt;max(2); max_occupants=-1 | Expected: 400 cho từng trường hợp"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-033: test_create_room_missing_fields_returns_400" time="0.00259">
+      <properties>
+        <property name="test_id" value="S2-API-033"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="POST phòng thiếu trường | Data: {} | Expected: 400, lỗi property/room_number/rent_price"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-037: test_create_room_negative_price_returns_400" time="0.00295">
+      <properties>
+        <property name="test_id" value="S2-API-037"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="POST phòng giá âm | Data: rent_price=-100 | Expected: 400 lỗi 'rent_price'"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-034: test_create_room_nonexistent_property_returns_400" time="0.00279">
+      <properties>
+        <property name="test_id" value="S2-API-034"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="POST phòng vào nhà không tồn tại | Data: property=999999 | Expected: 400, lỗi 'property'"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-032: test_create_room_success" time="0.00530">
+      <properties>
+        <property name="test_id" value="S2-API-032"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="POST /api/rooms/ hợp lệ | Data: property, room_number='102', area, rent_price | Expected: 201, code='NT100-102', status=AVAILABLE, lưu DB"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-046: test_delete_nonexistent_room_returns_404" time="0.00282">
+      <properties>
+        <property name="test_id" value="S2-API-046"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="DELETE phòng không tồn tại | Data: id=999999 | Expected: 404"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-045: test_delete_rented_room_is_blocked" time="0.00852">
+      <properties>
+        <property name="test_id" value="S2-API-045"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="DELETE phòng đang thuê | Data: OCCUPIED, FULL, hoặc có người ở | Expected: 400 'error'; phòng còn nguyên"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-044: test_delete_room_with_maintenance_history_is_soft_delete" time="0.00691">
+      <properties>
+        <property name="test_id" value="S2-API-044"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="DELETE phòng đã có yêu cầu bảo trì | Data: 1 MaintenanceRequest | Expected: 200, soft_deleted=True, status=INACTIVE, bản ghi còn"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-043: test_delete_room_without_history_is_hard_delete" time="0.00451">
+      <properties>
+        <property name="test_id" value="S2-API-043"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="DELETE phòng trống chưa có lịch sử | Data: phòng AVAILABLE | Expected: 200, soft_deleted=False, bản ghi bị xóa"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-047: test_get_room_status_detail" time="0.00293">
+      <properties>
+        <property name="test_id" value="S2-API-047"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="GET /rooms/{id}/status/ | Data: phòng AVAILABLE | Expected: 200, status, status_display, is_rentable=True, rentability_reason"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-062: test_health_endpoint_is_public" time="0.00142">
+      <properties>
+        <property name="test_id" value="S2-API-062"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="GET /health/ không cần token | Data: client ẩn danh | Expected: 200, service key=property, port=8002, status=UP"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-030: test_list_rooms" time="0.00482">
+      <properties>
+        <property name="test_id" value="S2-API-030"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="GET /api/rooms/ | Data: 1 phòng | Expected: 200, 1 phần tử có room_number/code/rent_price/status/is_rentable"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-042: test_move_room_to_other_landlords_property_returns_400" time="0.00500">
+      <properties>
+        <property name="test_id" value="S2-API-042"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="PATCH chuyển phòng sang nhà chủ khác | Data: property=nhà owner 202 | Expected: 400; phòng giữ nhà cũ"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-040: test_patch_room_nonexistent_returns_404" time="0.00229">
+      <properties>
+        <property name="test_id" value="S2-API-040"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="PATCH phòng không tồn tại | Data: id=999999 | Expected: 404"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-041: test_patch_room_occupants_over_max_returns_400" time="0.00413">
+      <properties>
+        <property name="test_id" value="S2-API-041"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="PATCH current_occupants vượt max | Data: current=5, max=2 | Expected: 400; DB giữ 0"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-039: test_patch_room_persists" time="0.00567">
+      <properties>
+        <property name="test_id" value="S2-API-039"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="PATCH phòng | Data: area=25, room_number='101-VIP' | Expected: 200, DB cập nhật"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-038: test_put_room_full_update" time="0.00677">
+      <properties>
+        <property name="test_id" value="S2-API-038"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="PUT cập nhật phòng | Data: đủ trường bắt buộc, rent_price mới | Expected: 200, DB cập nhật"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-031: test_retrieve_room_and_404" time="0.00533">
+      <properties>
+        <property name="test_id" value="S2-API-031"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="GET /api/rooms/{id}/ | Data: id hợp lệ và 999999 | Expected: 200 đúng dữ liệu; 404 khi không tồn tại"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-061: test_room_response_is_json_with_private_fields_for_manager" time="0.00443">
+      <properties>
+        <property name="test_id" value="S2-API-061"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Định dạng response &amp; dữ liệu riêng tư cho chủ trọ | Data: phòng có tenant_phone | Expected: Content-Type JSON; tenant_phone hiển thị"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-053: test_set_each_valid_status" time="0.02416">
+      <properties>
+        <property name="test_id" value="S2-API-053"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Chuyển tới mọi trạng thái hợp lệ | Data: 6 trạng thái | Expected: 200 và status lưu đúng (OCCUPIED có thể thành FULL nếu đủ chỗ)"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-051: test_set_status_available_resets_occupants_and_tenant" time="0.00561">
+      <properties>
+        <property name="test_id" value="S2-API-051"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="status=AVAILABLE dọn thông tin người thuê | Data: phòng OCCUPIED có tenant_name/phone | Expected: current_occupants=0, tenant_name='' và tenant_phone=''"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-050: test_set_status_full_sets_occupants_to_max" time="0.00522">
+      <properties>
+        <property name="test_id" value="S2-API-050"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="status=FULL | Data: phòng max=2 | Expected: current_occupants=2"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-054: test_set_status_invalid_returns_400_with_allowed_list" time="0.00540">
+      <properties>
+        <property name="test_id" value="S2-API-054"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="status không hợp lệ | Data: 'BOGUS' và thiếu | Expected: 400, có 'allowed_statuses'; DB không đổi"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-056: test_set_status_non_numeric_occupants_returns_400" time="0.00297">
+      <properties>
+        <property name="test_id" value="S2-API-056"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="current_occupants không phải số | Data: 'abc' | Expected: 400 (không phải 500)"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-057: test_set_status_nonexistent_room_returns_404" time="0.00246">
+      <properties>
+        <property name="test_id" value="S2-API-057"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Đổi trạng thái phòng không tồn tại | Data: id=999999 | Expected: 404"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-055: test_set_status_occupants_boundaries" time="0.01162">
+      <properties>
+        <property name="test_id" value="S2-API-055"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Biên current_occupants khi đổi trạng thái | Data: -1, max+1 | Expected: 400; 0 và max chấp nhận (200)"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-049: test_set_status_occupied_at_capacity_becomes_full" time="0.00512">
+      <properties>
+        <property name="test_id" value="S2-API-049"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="OCCUPIED với số người = max | Data: current_occupants=2, max=2 | Expected: tự chuyển FULL"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-048: test_set_status_occupied_defaults_one_occupant" time="0.00503">
+      <properties>
+        <property name="test_id" value="S2-API-048"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="PATCH status=OCCUPIED không truyền người ở | Data: phòng trống | Expected: 200, status OCCUPIED, current_occupants=1"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.api_tests.test_views.RoomApiTests" name="S2-API-052: test_set_status_updates_tenant_info" time="0.00488">
+      <properties>
+        <property name="test_id" value="S2-API-052"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="API/HTTP Test"/>
+        <property name="description" value="Cập nhật tenant_name/tenant_phone qua status | Data: OCCUPIED + tenant_name | Expected: lưu DB"/>
+      </properties>
+    </testcase>
+  </testsuite>
+  <testsuite name="services.property_service.testing.unit_tests.test_models" tests="15" failures="0" errors="0" skipped="0" time="0.0379">
+    <testcase classname="services.property_service.testing.unit_tests.test_models.PropertyModelTests" name="S2-MOD-001: test_create_property_defaults_str_and_computed_addresses" time="0.00070">
+      <properties>
+        <property name="test_id" value="S2-MOD-001"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Gộp S2-MOD-001, 007, 008, 009, 014] Tạo Property hợp lệ, giá trị mặc định, __str__, full_address và area_location | Data: name, address, ward='' | Expected: lưu DB đúng mặc định, __str__='NT9 - Nhà A', bỏ phần rỗng trong địa chỉ"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_models.PropertyModelTests" name="S2-MOD-006: test_deleting_property_cascades_rooms" time="0.00346">
+      <properties>
+        <property name="test_id" value="S2-MOD-006"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-MOD-017] FK CASCADE Property -&gt; Room | Data: xóa Property có 2 phòng | Expected: các phòng thuộc nhà trọ bị xóa theo"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_models.PropertyModelTests" name="S2-MOD-002: test_property_auto_code_generation_and_collision_skip" time="0.00217">
+      <properties>
+        <property name="test_id" value="S2-MOD-002"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Gộp S2-MOD-002, 003, 004] Tự sinh mã nhà trọ tăng dần NT001, NT002 và nhảy qua mã đã tồn tại | Data: tạo 2 nhà + tạo sẵn NT004 rồi tạo tiếp | Expected: NT001, NT002, NT004 -&gt; NT005"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_models.PropertyModelTests" name="S2-MOD-003: test_property_explicit_code_preserved_and_unique_constraint" time="0.00055">
+      <properties>
+        <property name="test_id" value="S2-MOD-003"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Gộp S2-MOD-005, 006] Giữ nguyên code truyền vào và chặn trùng UNIQUE | Data: 2 Property cùng code='ABC-1' | Expected: nhà 1 giữ 'ABC-1'; nhà 2 ném IntegrityError"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_models.PropertyModelTests" name="S2-MOD-004: test_property_field_validations_and_boundaries" time="0.00172">
+      <properties>
+        <property name="test_id" value="S2-MOD-004"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Gộp S2-MOD-010, 011, 012, 013] Kiểm tra full_clean cho name, address, status và biên độ dài name (150/151) | Data: name='', address='', status='BOGUS', name 150 &amp; 151 ký tự | Expected: ValidationError đúng trường"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_models.PropertyModelTests" name="S2-MOD-005: test_property_room_count_aggregates_and_active_queryset" time="0.00823">
+      <properties>
+        <property name="test_id" value="S2-MOD-005"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Gộp S2-MOD-015, 016, 018] Bộ đếm phòng khi nhà trống và khi có 6 phòng đủ trạng thái + active_rooms_qs | Data: 0 phòng -&gt; 6 phòng | Expected: 0 ban đầu; sau đó total=6, available=1, occupied=2, full=1, maintenance=1, inactive=1"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_models.RoomModelTests" name="S2-MOD-007: test_create_room_defaults_str_and_ordering" time="0.00311">
+      <properties>
+        <property name="test_id" value="S2-MOD-007"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Gộp S2-MOD-019, 024, 027, 028, 029] Tạo Room mặc định, __str__, enum RoomStatus/RoomType và thứ tự sắp xếp (property, floor, room_number) | Data: 3 phòng tầng 1-2 | Expected: mặc định đúng, sắp xếp [1/101, 1/102, 2/101]"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_models.RoomModelTests" name="S2-MOD-008: test_room_auto_code_normalization_and_collision_suffix" time="0.00204">
+      <properties>
+        <property name="test_id" value="S2-MOD-008"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Gộp S2-MOD-020, 021, 022] Tự sinh mã phòng, chuẩn hóa ký tự đặc biệt và thêm hậu tố '-2' khi trùng | Data: '101', 'a-01 vip', trùng '101' | Expected: 'NT001-101', 'NT001-A01VIP', 'NT001-101-2'"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_models.RoomModelTests" name="S2-MOD-009: test_room_explicit_code_unique_and_property_fk_required" time="0.00143">
+      <properties>
+        <property name="test_id" value="S2-MOD-009"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Gộp S2-MOD-023, 025, 026] Giữ code truyền vào, UNIQUE code và bắt buộc FK property | Data: trùng code='X1', thiếu property | Expected: IntegrityError khi trùng code hoặc thiếu property"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_models.RoomModelTests" name="S2-MOD-010: test_room_field_validations_and_bug_fixes" time="0.00576">
+      <properties>
+        <property name="test_id" value="S2-MOD-010"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Gộp S2-MOD-030..037] Kiểm tra full_clean của Room (BUG-01 rent_price&lt;0, BUG-02 area&lt;=0, BUG-04 max_occupants&lt;1, biên max_digits=12, biên room_number=60) | Data: biên hợp lệ &amp; không hợp lệ | Expected: ValidationError đúng trường"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_models.RoomRentabilityAndMaintenanceModelTests" name="S2-MOD-011: test_available_room_in_active_property_is_rentable" time="0.00094">
+      <properties>
+        <property name="test_id" value="S2-MOD-011"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-MOD-038] Phòng AVAILABLE trong nhà ACTIVE | Data: AVAILABLE, property ACTIVE | Expected: is_rentable=True, check_rentability=(True, '...trống...')"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_models.RoomRentabilityAndMaintenanceModelTests" name="S2-MOD-015: test_maintenance_request_and_history_str_representations" time="0.00145">
+      <properties>
+        <property name="test_id" value="S2-MOD-015"/>
+        <property name="sprint_scope" value="Ngoài Sprint 1 (Maintenance)"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Ngoài Sprint 1] [Từ S2-MOD-046] __str__ của MaintenanceRequest và MaintenanceHistory | Data: code='BT0001', title='Hỏng đèn', action='Tạo mới' | Expected: 'BT0001 - Hỏng đèn' và 'BT0001 - Tạo mới'"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_models.RoomRentabilityAndMaintenanceModelTests" name="S2-MOD-014: test_maintenance_request_auto_code_collision_and_is_open" time="0.00220">
+      <properties>
+        <property name="test_id" value="S2-MOD-014"/>
+        <property name="sprint_scope" value="Ngoài Sprint 1 (Maintenance)"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Ngoài Sprint 1] [Gộp S2-MOD-043, 045] Quan hệ Room-MaintenanceRequest, thuộc tính is_open, giữ code truyền sẵn và tự tăng mã BTxxxx khi trùng | Data: tạo BT0002 rồi tạo mới không code | Expected: is_open=True, mã kế tiếp là BT0003"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_models.RoomRentabilityAndMaintenanceModelTests" name="S2-MOD-013: test_non_available_statuses_and_unknown_fallback_reasons" time="0.00300">
+      <properties>
+        <property name="test_id" value="S2-MOD-013"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Gộp S2-MOD-039, 041, 042, 044] Lý do check_rentability cho OCCUPIED (còn chỗ), FULL, RESERVED, MAINTENANCE, INACTIVE và nhánh fallback UNKNOWN_STATE | Data: 6 trạng thái | Expected: is_rentable=False, lý do khớp từng trạng thái"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_models.RoomRentabilityAndMaintenanceModelTests" name="S2-MOD-012: test_room_not_rentable_when_property_inactive" time="0.00111">
+      <properties>
+        <property name="test_id" value="S2-MOD-012"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-MOD-040] Nhà trọ INACTIVE thì phòng AVAILABLE cũng không cho thuê | Data: property INACTIVE | Expected: is_rentable=False, reason nêu tên nhà trọ"/>
+      </properties>
+    </testcase>
+  </testsuite>
+  <testsuite name="services.property_service.testing.unit_tests.test_serializers" tests="18" failures="0" errors="0" skipped="0" time="0.1123">
+    <testcase classname="services.property_service.testing.unit_tests.test_serializers.PropertySerializerTests" name="S2-SER-001: test_create_property_assigns_token_owner_and_ignores_payload_owner" time="0.00161">
+      <properties>
+        <property name="test_id" value="S2-SER-001"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Gộp S2-SER-001, 003] Tạo Property hợp lệ gán owner_id từ request.user và bỏ qua owner_id=999 trong payload | Data: name, address, owner_id=999 | Expected: is_valid=True, owner_id=101, tự sinh code NT..."/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_serializers.PropertySerializerTests" name="S2-SER-002: test_create_without_request_context_uses_model_default_owner" time="0.00148">
+      <properties>
+        <property name="test_id" value="S2-SER-002"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-SER-002] Tạo Property khi context không có request | Data: payload hợp lệ, context={} | Expected: owner_id mặc định của model (=1)"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_serializers.PropertySerializerTests" name="S2-SER-006: test_property_duplicate_code_and_invalid_image_url_rejected" time="0.00203">
+      <properties>
+        <property name="test_id" value="S2-SER-006"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Gộp S2-SER-013, 014] Chặn trùng code UNIQUE và image_url sai định dạng URL | Data: code='DUP', image_url='not-a-url' | Expected: lỗi ở 'code' và 'image_url'"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_serializers.PropertySerializerTests" name="S2-SER-005: test_property_numeric_and_utility_rates_validation" time="0.00392">
+      <properties>
+        <property name="test_id" value="S2-SER-005"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Gộp S2-SER-010, 011, 012 — BUG-03] Chặn total_floors sai kiểu/âm và chặn đơn giá điện/nước/internet âm | Data: total_floors='abc'/-1, rates=-1 | Expected: is_valid=False ở từng trường"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_serializers.PropertySerializerTests" name="S2-SER-008: test_property_partial_update_preserves_owner_and_ignores_readonly" time="0.00186">
+      <properties>
+        <property name="test_id" value="S2-SER-008"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Gộp S2-SER-016, 017, 018] Cập nhật partial giữ nguyên trường khác, bỏ qua trường read-only (id, created_at, rooms) và không đổi owner_id khi ADMIN sửa | Data: PATCH name, total_floors | Expected: pk và owner_id không đổi"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_serializers.PropertySerializerTests" name="S2-SER-003: test_property_required_and_blank_fields_validation" time="0.00366">
+      <properties>
+        <property name="test_id" value="S2-SER-003"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Gộp S2-SER-004, 005, 006, 007] Kiểm tra thiếu trường bắt buộc (name, address) và chuỗi rỗng/khoảng trắng | Data: {}, thiếu name/address, name=''/' ' | Expected: is_valid=False, báo lỗi đúng trường"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_serializers.PropertySerializerTests" name="S2-SER-007: test_property_serialized_output_computed_fields_and_room_counts" time="0.00782">
+      <properties>
+        <property name="test_id" value="S2-SER-007"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-SER-015] Đầu ra PropertySerializer chứa full_address, status_display, bộ đếm phòng và danh sách rooms lồng nhau | Data: 1 AVAILABLE, 1 OCCUPIED | Expected: total=2, available=1, occupied=1"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_serializers.PropertySerializerTests" name="S2-SER-004: test_property_status_choices_validation" time="0.00339">
+      <properties>
+        <property name="test_id" value="S2-SER-004"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Gộp S2-SER-008, 009] Kiểm tra status hợp lệ (ACTIVE/INACTIVE/DELETED) và từ chối status='BOGUS' | Data: 3 status hợp lệ + 1 sai | Expected: hợp lệ True; BOGUS False ở 'status'"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_serializers.RoomSerializerTests" name="S2-SER-017: test_active_maintenance_count_counts_only_open_requests" time="0.00714">
+      <properties>
+        <property name="test_id" value="S2-SER-017"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-SER-042] active_maintenance_count chỉ đếm yêu cầu đang mở (PENDING, IN_PROGRESS) | Data: 1 PENDING, 1 IN_PROGRESS, 1 COMPLETED | Expected: =2"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_serializers.RoomSerializerTests" name="S2-SER-009: test_create_valid_room_and_ignore_readonly_fields" time="0.00321">
+      <properties>
+        <property name="test_id" value="S2-SER-009"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Gộp S2-SER-019, 038] Tạo Room hợp lệ sinh mã 'NT1-101' và bỏ qua các trường read-only (id, is_rentable, property_name) | Data: payload hợp lệ + id=9999, is_rentable=False | Expected: lưu thành công, is_rentable=True"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_serializers.RoomSerializerTests" name="S2-SER-018: test_many_serialization_returns_all_rooms" time="0.00713">
+      <properties>
+        <property name="test_id" value="S2-SER-018"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-SER-044] Serialize danh sách nhiều phòng (many=True) | Data: 3 phòng | Expected: 3 phần tử đúng giá thuê"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_serializers.RoomSerializerTests" name="S2-SER-013: test_occupants_capacity_validation_on_create_and_partial_update" time="0.00464">
+      <properties>
+        <property name="test_id" value="S2-SER-013"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Gộp S2-SER-033, 034, 035] Kiểm tra current_occupants &lt;= max_occupants khi tạo mới (current=2/3, max=2) và khi PATCH partial dựa trên instance.max_occupants | Data: current=2 (OK), current=3 (lỗi), PATCH current=5 (lỗi) | Expected: chặn vượt sức chứa"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_serializers.RoomSerializerTests" name="S2-SER-015: test_output_hides_private_fields_for_tenant" time="0.00259">
+      <properties>
+        <property name="test_id" value="S2-SER-015"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-SER-040] Ẩn thông tin cá nhân người thuê đối với role TENANT | Data: user role=TENANT | Expected: không có tenant_name, tenant_phone, maintenance_requests"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_serializers.RoomSerializerTests" name="S2-SER-016: test_output_hides_private_fields_without_request_context" time="0.00271">
+      <properties>
+        <property name="test_id" value="S2-SER-016"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-SER-041] Mặc định an toàn (fail-safe) ẩn PII khi serializer không có request context | Data: RoomSerializer(room) | Expected: không có tenant_name"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_serializers.RoomSerializerTests" name="S2-SER-014: test_output_structure_and_rentability_for_manager" time="0.00256">
+      <properties>
+        <property name="test_id" value="S2-SER-014"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Gộp S2-SER-039, 043] Đầu ra cho LANDLORD/ADMIN hiển thị đầy đủ PII (tenant_name, tenant_phone) và đồng bộ rentability_reason với model | Data: phòng có tenant_name, status=MAINTENANCE | Expected: đủ trường quản lý"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_serializers.RoomSerializerTests" name="S2-SER-012: test_room_choices_duplicate_code_and_amenities_boundary" time="0.00692">
+      <properties>
+        <property name="test_id" value="S2-SER-012"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Gộp S2-SER-032, 036, 037] Chặn status/room_type sai, trùng code UNIQUE và biên độ dài amenities (500/501) | Data: status='BOGUS', code='DUP-ROOM', amenities 500 &amp; 501 ký tự | Expected: báo lỗi đúng trường"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_serializers.RoomSerializerTests" name="S2-SER-011: test_room_numeric_types_and_bug_validators" time="0.04516">
+      <properties>
+        <property name="test_id" value="S2-SER-011"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Gộp S2-SER-023, 025..031 — BUG-01, BUG-02, BUG-04] Kiểm tra sai kiểu số, giá âm/thập phân/vượt 12 chữ số, diện tích &lt;=0, max_occupants &lt;=0 | Data: parameterized invalid values | Expected: is_valid=False đúng trường"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_serializers.RoomSerializerTests" name="S2-SER-010: test_room_required_fields_and_invalid_property_fk" time="0.00444">
+      <properties>
+        <property name="test_id" value="S2-SER-010"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Gộp S2-SER-020, 021, 022, 024] Thiếu trường bắt buộc, giá trị rỗng hoặc property không tồn tại / sai kiểu | Data: {}, room_number='', property=999999/'abc' | Expected: lỗi ở property, room_number, rent_price"/>
+      </properties>
+    </testcase>
+  </testsuite>
+  <testsuite name="services.property_service.testing.unit_tests.test_services" tests="28" failures="0" errors="0" skipped="0" time="0.1111">
+    <testcase classname="services.property_service.testing.unit_tests.test_services.MaintenanceViewSetUnitTests" name="S2-BIZ-021: test_cancel_allows_reporting_tenant_and_restores_room" time="0.00690">
+      <properties>
+        <property name="test_id" value="S2-BIZ-021"/>
+        <property name="sprint_scope" value="Ngoài Sprint 1 (Maintenance)"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Ngoài Sprint 1] [Tách từ S2-BIZ-028] action cancel cho phép người báo hủy yêu cầu của chính mình (200) | Data: reported_by_id=555, user_id=555 | Expected: 200 OK, status=CANCELLED"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_services.MaintenanceViewSetUnitTests" name="S2-BIZ-020: test_cancel_denies_other_tenant" time="0.00272">
+      <properties>
+        <property name="test_id" value="S2-BIZ-020"/>
+        <property name="sprint_scope" value="Ngoài Sprint 1 (Maintenance)"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Ngoài Sprint 1] [Tách từ S2-BIZ-028] action cancel chặn TENANT khác hủy yêu cầu không phải của mình (403) | Data: reported_by_id=555, user_id=777 | Expected: 403 Forbidden"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_services.MaintenanceViewSetUnitTests" name="S2-BIZ-019: test_complete_action_branches" time="0.00822">
+      <properties>
+        <property name="test_id" value="S2-BIZ-019"/>
+        <property name="sprint_scope" value="Ngoài Sprint 1 (Maintenance)"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Ngoài Sprint 1] [Tách từ S2-BIZ-027] action complete với chi phí âm (ValidationError) và hoàn tất hợp lệ khôi phục trạng thái phòng | Data: actual_cost=-50, actual_cost=150000 | Expected: ValidationError khi âm; COMPLETED và khôi phục AVAILABLE khi hợp lệ"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_services.MaintenanceViewSetUnitTests" name="S2-BIZ-016: test_do_start_and_start_action_all_branches" time="0.00990">
+      <properties>
+        <property name="test_id" value="S2-BIZ-016"/>
+        <property name="sprint_scope" value="Ngoài Sprint 1 (Maintenance)"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Ngoài Sprint 1] [Từ S2-BIZ-025] _do_start và action start với phòng AVAILABLE (có/không previous_room_status) và phòng đã MAINTENANCE | Data: 3 yêu cầu PENDING | Expected: chuyển IN_PROGRESS, khóa phòng và lưu previous_room_status đúng"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_services.MaintenanceViewSetUnitTests" name="S2-BIZ-013: test_get_permissions_and_helpers_set_room_status_and_transition" time="0.00303">
+      <properties>
+        <property name="test_id" value="S2-BIZ-013"/>
+        <property name="sprint_scope" value="Ngoài Sprint 1 (Maintenance)"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Ngoài Sprint 1] [Từ S2-BIZ-022] get_permissions, _set_room_status và _ensure_transition | Data: action update/list, phòng cùng/khác status, chuyển trạng thái sai | Expected: trả đúng permission list, chỉ save khi đổi status, ném ValidationError khi sai luồng"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_services.MaintenanceViewSetUnitTests" name="S2-BIZ-014: test_perform_create_all_branches" time="0.00962">
+      <properties>
+        <property name="test_id" value="S2-BIZ-014"/>
+        <property name="sprint_scope" value="Ngoài Sprint 1 (Maintenance)"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Ngoài Sprint 1] [Từ S2-BIZ-023] perform_create với khóa phòng, set_room_maintenance=false, reported_by sẵn và phòng ngoài phạm vi | Data: 3 payload | Expected: tạo đúng trạng thái phòng, giữ reported_by, chặn phòng ngoài phạm vi"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_services.MaintenanceViewSetUnitTests" name="S2-BIZ-015: test_perform_update_success_and_out_of_scope_room" time="0.00697">
+      <properties>
+        <property name="test_id" value="S2-BIZ-015"/>
+        <property name="sprint_scope" value="Ngoài Sprint 1 (Maintenance)"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Ngoài Sprint 1] [Từ S2-BIZ-024] perform_update cập nhật hợp lệ và chặn đổi sang phòng ngoài phạm vi | Data: PATCH repair_info và PATCH room=other_room | Expected: lưu + ghi lịch sử khi hợp lệ; ValidationError khi phòng chủ khác"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_services.MaintenanceViewSetUnitTests" name="S2-BIZ-018: test_record_cost_branches" time="0.01111">
+      <properties>
+        <property name="test_id" value="S2-BIZ-018"/>
+        <property name="sprint_scope" value="Ngoài Sprint 1 (Maintenance)"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Ngoài Sprint 1] [Tách từ S2-BIZ-027] action record_cost với chi phí âm (ValidationError), payload rỗng và payload đầy đủ | Data: estimated_cost=-1, {}, đầy đủ | Expected: ValidationError khi âm; 200 và cập nhật DB khi hợp lệ"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_services.MaintenanceViewSetUnitTests" name="S2-BIZ-017: test_update_status_all_branches" time="0.01586">
+      <properties>
+        <property name="test_id" value="S2-BIZ-017"/>
+        <property name="sprint_scope" value="Ngoài Sprint 1 (Maintenance)"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Ngoài Sprint 1] [Từ S2-BIZ-026] action update_status: status sai/PENDING (400), IN_PROGRESS, COMPLETED có technician, CANCELLED không technician | Data: 3 yêu cầu | Expected: 400 khi sai; 200 khi chuyển IN_PROGRESS/COMPLETED/CANCELLED"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_services.ScopedQuerysetTests" name="S2-BIZ-001: test_admin_sees_all_properties_and_rooms" time="0.00271">
+      <properties>
+        <property name="test_id" value="S2-BIZ-001"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-BIZ-010] ADMIN thấy toàn bộ nhà trọ và phòng | Data: 2 nhà của 2 chủ | Expected: 2 nhà, 3 phòng"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_services.ScopedQuerysetTests" name="S2-BIZ-009: test_deleted_property_still_in_scope_for_owner" time="0.00269">
+      <properties>
+        <property name="test_id" value="S2-BIZ-009"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-BIZ-018] Nhà xóa mềm (DELETED) vẫn nằm trong scoped_properties của chủ trọ để phục vụ xem chi tiết / khôi phục | Data: P1 DELETED | Expected: P1 thuộc scoped_properties"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_services.ScopedQuerysetTests" name="S2-BIZ-010: test_inactive_room_still_in_scope_for_owner" time="0.00323">
+      <properties>
+        <property name="test_id" value="S2-BIZ-010"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-BIZ-019] Phòng INACTIVE vẫn nằm trong scoped_rooms của chủ trọ | Data: r1 INACTIVE | Expected: r1 thuộc scoped_rooms"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_services.ScopedQuerysetTests" name="S2-BIZ-003: test_landlord_sees_only_own_data" time="0.00304">
+      <properties>
+        <property name="test_id" value="S2-BIZ-003"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-BIZ-012] LANDLORD chỉ thấy nhà trọ và phòng thuộc sở hữu của mình | Data: owner 101 | Expected: nhà P1 và 2 phòng r1, r2"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_services.ScopedQuerysetTests" name="S2-BIZ-004: test_landlord_without_properties_sees_nothing" time="0.00273">
+      <properties>
+        <property name="test_id" value="S2-BIZ-004"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-BIZ-013] LANDLORD chưa có nhà trọ nhận queryset rỗng | Data: owner 777 | Expected: 0 nhà, 0 phòng"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_services.ScopedQuerysetTests" name="S2-BIZ-007: test_legacy_staff_is_treated_as_narrowest_role" time="0.00258">
+      <properties>
+        <property name="test_id" value="S2-BIZ-007"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-BIZ-016] Role legacy STAFF bị giới hạn như TENANT không có phòng thuê | Data: role=STAFF | Expected: 0 phòng"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_services.ScopedQuerysetTests" name="S2-BIZ-011: test_room_status_after_maintenance_all_branches" time="0.00287">
+      <properties>
+        <property name="test_id" value="S2-BIZ-011"/>
+        <property name="sprint_scope" value="Ngoài Sprint 1 (Maintenance)"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Ngoài Sprint 1] [Từ S2-BIZ-020] _room_status_after_maintenance với requested hợp lệ/sai, previous_room_status, và current_occupants 0/1 | Data: 5 nhánh | Expected: trả đúng RoomStatus hoặc ValidationError"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_services.ScopedQuerysetTests" name="S2-BIZ-012: test_scoped_maintenance_for_admin_landlord_and_tenant" time="0.00511">
+      <properties>
+        <property name="test_id" value="S2-BIZ-012"/>
+        <property name="sprint_scope" value="Ngoài Sprint 1 (Maintenance)"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Ngoài Sprint 1] [Từ S2-BIZ-021] scoped_maintenance phân quyền theo ADMIN/LANDLORD/TENANT | Data: 2 yêu cầu của 2 nhà trọ | Expected: ADMIN thấy 2, LANDLORD thấy 1, TENANT thấy yêu cầu mình báo"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_services.ScopedQuerysetTests" name="S2-BIZ-008: test_scoped_rooms_selects_property_relation" time="0.00296">
+      <properties>
+        <property name="test_id" value="S2-BIZ-008"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-BIZ-017] scoped_rooms sử dụng select_related('property') tránh lỗi N+1 query | Data: 3 phòng | Expected: 0 query phát sinh khi đọc room.property.name"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_services.ScopedQuerysetTests" name="S2-BIZ-002: test_superuser_flag_is_treated_as_admin" time="0.00216">
+      <properties>
+        <property name="test_id" value="S2-BIZ-002"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-BIZ-011] Cờ is_superuser=True được cấp phạm vi toàn hệ thống như ADMIN | Data: role=TENANT, is_superuser=True | Expected: thấy 2 nhà"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_services.ScopedQuerysetTests" name="S2-BIZ-005: test_tenant_sees_only_rented_room_and_its_property" time="0.00367">
+      <properties>
+        <property name="test_id" value="S2-BIZ-005"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-BIZ-014] TENANT chỉ thấy phòng đang thuê và nhà trọ chứa phòng đó | Data: thuê r1 | Expected: rooms=[r1], properties=[p1]"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_services.ScopedQuerysetTests" name="S2-BIZ-006: test_tenant_without_rented_rooms_sees_nothing" time="0.00279">
+      <properties>
+        <property name="test_id" value="S2-BIZ-006"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-BIZ-015] TENANT chưa thuê phòng nào nhận queryset rỗng | Data: rented_rooms=[] | Expected: 0 nhà, 0 phòng"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_services.ActorNameTests" name="S2-UTL-007: test_actor_name_resolution_order_and_anonymous_fallback" time="0.00003">
+      <properties>
+        <property name="test_id" value="S2-UTL-007"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Gộp S2-BIZ-008, 009] _actor_name cho anonymous ('Hệ thống') và thứ tự ưu tiên full_name &gt; username &gt; 'User #id' | Data: None, unauth, full_name, username, id | Expected: 'Hệ thống', 'Nguyễn A', 'chutro1', 'User #5'"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_services.ParseHelperTests" name="S2-UTL-001: test_parse_decimal_empty_returns_none" time="0.00002">
+      <properties>
+        <property name="test_id" value="S2-UTL-001"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-BIZ-001] _parse_decimal giá trị rỗng | Data: None và '' | Expected: None"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_services.ParseHelperTests" name="S2-UTL-003: test_parse_decimal_invalid_raises_validation_error_with_field" time="0.00004">
+      <properties>
+        <property name="test_id" value="S2-UTL-003"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-BIZ-003] _parse_decimal giá trị sai | Data: 'abc', field='min_price' | Expected: ValidationError chứa khóa 'min_price'"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_services.ParseHelperTests" name="S2-UTL-002: test_parse_decimal_valid_values" time="0.00002">
+      <properties>
+        <property name="test_id" value="S2-UTL-002"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-BIZ-002] _parse_decimal giá trị hợp lệ | Data: '12.5', 7, '0' | Expected: Decimal tương ứng"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_services.ParseHelperTests" name="S2-UTL-005: test_parse_number_casts_and_boundary_values" time="0.00002">
+      <properties>
+        <property name="test_id" value="S2-UTL-005"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Gộp S2-BIZ-005, 007] _parse_number ép kiểu int/float và giữ đúng biên 0 / số âm | Data: '5', '2.5', '0', '-3' | Expected: 5, 2.5, 0, -3"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_services.ParseHelperTests" name="S2-UTL-004: test_parse_number_empty_and_all_return_none" time="0.00002">
+      <properties>
+        <property name="test_id" value="S2-UTL-004"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-BIZ-004] _parse_number bỏ qua giá trị rỗng/ALL | Data: None, '', 'ALL' | Expected: None"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_services.ParseHelperTests" name="S2-UTL-006: test_parse_number_invalid_raises_validation_error" time="0.00004">
+      <properties>
+        <property name="test_id" value="S2-UTL-006"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-BIZ-006] _parse_number giá trị sai | Data: 'x' (int), '1.5' (int) | Expected: ValidationError chứa tên trường"/>
+      </properties>
+    </testcase>
+  </testsuite>
+  <testsuite name="services.property_service.testing.unit_tests.test_permissions" tests="11" failures="0" errors="0" skipped="0" time="0.0012">
+    <testcase classname="services.property_service.testing.unit_tests.test_permissions.PermissionClassUnitTests" name="S2-PERM-001: test_get_role_for_anonymous_and_none" time="0.00003">
+      <properties>
+        <property name="test_id" value="S2-PERM-001"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-SEC-001] get_role người chưa xác thực | Data: None / is_authenticated=False | Expected: None"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_permissions.PermissionClassUnitTests" name="S2-PERM-002: test_get_role_superuser_unknown_and_missing" time="0.00010">
+      <properties>
+        <property name="test_id" value="S2-PERM-002"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-SEC-002] get_role: superuser, role lạ, thiếu role | Data: is_superuser, 'HACKER', không role | Expected: ADMIN, TENANT, TENANT"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_permissions.PermissionClassUnitTests" name="S2-PERM-004: test_get_user_id_parsing" time="0.00004">
+      <properties>
+        <property name="test_id" value="S2-PERM-004"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-SEC-004] get_user_id ép kiểu số nguyên và xử lý giá trị lỗi | Data: 12, '12', None, 'abc' | Expected: 12, 12, None, None"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_permissions.PermissionClassUnitTests" name="S2-PERM-006: test_is_manager_or_read_only_safe_methods_for_any_authenticated_user" time="0.00015">
+      <properties>
+        <property name="test_id" value="S2-PERM-006"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-SEC-006] IsManagerOrReadOnly cho phép GET/HEAD/OPTIONS với mọi user đã đăng nhập | Data: TENANT với GET/HEAD/OPTIONS | Expected: True"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_permissions.PermissionClassUnitTests" name="S2-PERM-005: test_is_manager_or_read_only_unauthenticated_denied" time="0.00006">
+      <properties>
+        <property name="test_id" value="S2-PERM-005"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-SEC-005] IsManagerOrReadOnly từ chối người dùng chưa đăng nhập | Data: user ẩn danh, GET | Expected: False"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_permissions.PermissionClassUnitTests" name="S2-PERM-007: test_is_manager_or_read_only_write_requires_manager" time="0.00032">
+      <properties>
+        <property name="test_id" value="S2-PERM-007"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-SEC-007] IsManagerOrReadOnly chỉ cho phép LANDLORD/ADMIN gọi POST/PUT/PATCH/DELETE | Data: 4 write methods × 4 roles | Expected: LANDLORD/ADMIN True; TENANT/STAFF False"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_permissions.PermissionClassUnitTests" name="S2-PERM-008: test_is_manager_role_permission" time="0.00010">
+      <properties>
+        <property name="test_id" value="S2-PERM-008"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-SEC-008] IsManagerRole chặn mọi method của TENANT và user ẩn danh | Data: LANDLORD, ADMIN, TENANT, ẩn danh | Expected: True, True, False, False"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_permissions.PermissionClassUnitTests" name="S2-PERM-003: test_role_predicates" time="0.00002">
+      <properties>
+        <property name="test_id" value="S2-PERM-003"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Từ S2-SEC-003] is_admin/is_landlord/is_manager | Data: ADMIN, LANDLORD, TENANT, STAFF | Expected: chỉ ADMIN &amp; LANDLORD là manager; STAFF không"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_permissions.PermissionClassUnitTests" name="S2-PERM-010: test_sprint_feature_lock_allows_all_actions_when_disabled" time="0.00018">
+      <properties>
+        <property name="test_id" value="S2-PERM-010"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Bổ sung Unit] SprintFeatureLock khi SPRINT_FEATURE_LOCK=False: cho phép cả action nằm trong sprint_locked_actions | Data: action='create' trong sprint_locked_actions | Expected: True"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_permissions.PermissionClassUnitTests" name="S2-PERM-009: test_sprint_feature_lock_allows_unlocked_actions_and_blocks_locked_actions" time="0.00013">
+      <properties>
+        <property name="test_id" value="S2-PERM-009"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Bổ sung Unit] SprintFeatureLock khi SPRINT_FEATURE_LOCK=True: cho phép action không khóa (list, retrieve) và chặn action trong sprint_locked_actions (create, history:POST) | Data: view có sprint_locked_actions=('create', 'history:POST') | Expected: list=True, create=False, history:GET=True, history:POST=False"/>
+      </properties>
+    </testcase>
+    <testcase classname="services.property_service.testing.unit_tests.test_permissions.PermissionClassUnitTests" name="S2-PERM-011: test_viewer_is_manager_helper_with_various_contexts" time="0.00005">
+      <properties>
+        <property name="test_id" value="S2-PERM-011"/>
+        <property name="sprint_scope" value="Sprint 1"/>
+        <property name="test_level" value="Pure Unit Test"/>
+        <property name="description" value="[Bổ sung Unit] _viewer_is_manager trong serializers.py với context rỗng, request=None, TENANT, LANDLORD, ADMIN | Data: 5 context | Expected: chỉ LANDLORD và ADMIN trả True"/>
+      </properties>
+    </testcase>
+  </testsuite>
+</testsuites>

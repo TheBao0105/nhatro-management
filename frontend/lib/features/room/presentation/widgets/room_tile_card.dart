@@ -126,7 +126,7 @@ class _RoomTileCardState extends State<RoomTileCard> {
                   children: [
                     _MetaItem(
                       icon: Icons.square_foot_rounded,
-                      text: '${r.area.toStringAsFixed(0)} m²',
+                      text: '${AppFormatters.area(r.area)} m²',
                     ),
                     const SizedBox(width: AppSpacing.md),
                     _MetaItem(

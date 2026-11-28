@@ -61,7 +61,7 @@ class _RoomPageState extends State<RoomPage> {
       text: '${existing?.rentPrice.toInt() ?? 3500000}',
     );
     final areaCtrl = TextEditingController(
-      text: '${existing?.area.toInt() ?? 22}',
+      text: AppFormatters.area(existing?.area ?? 22),
     );
     final currOccCtrl = TextEditingController(
       text: '${existing?.currentOccupants ?? 0}',
@@ -128,6 +128,13 @@ class _RoomPageState extends State<RoomPage> {
                             controller: priceCtrl,
                             requiredField: true,
                             isNumber: true,
+                            validator: (v) {
+                              final raw = v?.trim() ?? '';
+                              if (raw.isEmpty) return 'Vui lòng nhập Giá thuê';
+                              final n = double.tryParse(raw);
+                              if (n == null || n <= 0) return 'Giá thuê phải lớn hơn 0';
+                              return null;
+                            },
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -137,6 +144,13 @@ class _RoomPageState extends State<RoomPage> {
                             controller: areaCtrl,
                             requiredField: true,
                             isNumber: true,
+                            validator: (v) {
+                              final raw = v?.trim() ?? '';
+                              if (raw.isEmpty) return 'Vui lòng nhập Diện tích';
+                              final n = double.tryParse(raw);
+                              if (n == null || n <= 0) return 'Diện tích phải lớn hơn 0';
+                              return null;
+                            },
                           ),
                         ),
                       ],
@@ -589,7 +603,7 @@ class _RoomPageState extends State<RoomPage> {
                       label: 'DIỆN TÍCH',
                       width: 100,
                       cellBuilder: (r) => Text(
-                        '${r.area.toStringAsFixed(0)} m²',
+                        '${AppFormatters.area(r.area)} m²',
                         style: AppTypography.bodyMd,
                       ),
                     ),

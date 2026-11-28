@@ -1,7 +1,9 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
+from rest_framework_simplejwt.settings import api_settings
 
 from .models import UserRole
 
@@ -57,6 +59,16 @@ class UserSerializer(serializers.ModelSerializer):
         validate_password(value)
         return value
 
+    def validate_email(self, value):
+        value = (value or '').strip()
+        if value:
+            dup_qs = User.objects.filter(email__iexact=value)
+            if self.instance is not None:
+                dup_qs = dup_qs.exclude(pk=self.instance.pk)
+            if dup_qs.exists():
+                raise serializers.ValidationError('Email đã được sử dụng.')
+        return value
+
     def validate(self, attrs):
         requester = self._requester()
         # STAFF chỉ còn để tương thích dữ liệu cũ: không ai được cấp mới vai trò này.
@@ -65,6 +77,13 @@ class UserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {'role': 'Vai trò STAFF đã ngừng sử dụng. Chọn ADMIN, LANDLORD hoặc TENANT.'})
         if _is_admin(requester):
+            if self.instance is None and not attrs.get('password'):
+                raise serializers.ValidationError({'password': 'Cần đặt mật khẩu cho tài khoản mới.'})
+            if self.instance is not None and requester and self.instance.pk == requester.pk:
+                if 'is_active' in attrs and attrs['is_active'] is False:
+                    raise serializers.ValidationError({'is_active': 'Không thể tự khóa tài khoản của chính mình.'})
+                if 'role' in attrs and attrs['role'] != self.instance.role:
+                    raise serializers.ValidationError({'role': 'Không thể tự hạ quyền tài khoản của chính mình.'})
             return attrs
 
         if self.instance is None:
@@ -89,12 +108,9 @@ class UserSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        password = validated_data.pop('password', None)
+        password = validated_data.pop('password')
         user = User(**validated_data)
-        if password:
-            user.set_password(password)
-        else:
-            user.set_unusable_password()
+        user.set_password(password)
         user.save()
         return user
 
@@ -119,6 +135,16 @@ class ProfileSerializer(serializers.ModelSerializer):
         model = User
         fields = USER_FIELDS
         read_only_fields = ['id', 'username', 'role', 'is_active', 'created_at', 'updated_at']
+
+    def validate_email(self, value):
+        value = (value or '').strip()
+        if value:
+            dup_qs = User.objects.filter(email__iexact=value)
+            if self.instance is not None:
+                dup_qs = dup_qs.exclude(pk=self.instance.pk)
+            if dup_qs.exists():
+                raise serializers.ValidationError('Email đã được sử dụng.')
+        return value
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -208,6 +234,31 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             'avatar_url': user.avatar_url,
         }
         return data
+
+
+class CustomTokenRefreshSerializer(TokenRefreshSerializer):
+    """
+    Làm mới JWT (/api/auth/refresh/):
+    - Xử lý an toàn User.DoesNotExist thành AuthenticationFailed (401) thay vì 500 khi tài khoản đã bị xóa
+      hoặc thiếu claim user_id.
+    - Đồng bộ lại claims (username, role, is_superuser, is_staff, full_name) từ DB hiện tại vào token mới
+      để các service stateless (Service 2–5) luôn nhận đúng quyền mới nhất.
+    """
+    def validate(self, attrs):
+        refresh = self.token_class(attrs['refresh'])
+        user_id = refresh.payload.get(api_settings.USER_ID_CLAIM, None)
+        user = User.objects.filter(**{api_settings.USER_ID_FIELD: user_id}).first() if user_id is not None else None
+        if user is None or not api_settings.USER_AUTHENTICATION_RULE(user):
+            raise AuthenticationFailed(
+                self.error_messages['no_active_account'],
+                'no_active_account',
+            )
+        refresh['username'] = user.username
+        refresh['role'] = user.role
+        refresh['is_superuser'] = bool(user.is_superuser)
+        refresh['is_staff'] = bool(user.is_staff)
+        refresh['full_name'] = user.full_name
+        return super().validate({'refresh': str(refresh)})
 
 
 class ChangePasswordSerializer(serializers.Serializer):

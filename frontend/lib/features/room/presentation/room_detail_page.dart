@@ -177,7 +177,7 @@ class RoomDetailPage extends StatelessWidget {
     final nameCtrl = TextEditingController(text: room.name);
     final floorCtrl = TextEditingController(text: '${room.floor}');
     final priceCtrl = TextEditingController(text: '${room.rentPrice.toInt()}');
-    final areaCtrl = TextEditingController(text: '${room.area.toInt()}');
+    final areaCtrl = TextEditingController(text: AppFormatters.area(room.area));
     final maxCtrl = TextEditingController(text: '${room.maxOccupants}');
     final descCtrl = TextEditingController(text: room.description);
 
@@ -230,6 +230,13 @@ class RoomDetailPage extends StatelessWidget {
                           controller: priceCtrl,
                           requiredField: true,
                           isNumber: true,
+                          validator: (v) {
+                            final raw = v?.trim() ?? '';
+                            if (raw.isEmpty) return 'Vui lòng nhập Giá thuê';
+                            final n = double.tryParse(raw);
+                            if (n == null || n <= 0) return 'Giá thuê phải lớn hơn 0';
+                            return null;
+                          },
                         ),
                       ),
                     ],
@@ -243,6 +250,13 @@ class RoomDetailPage extends StatelessWidget {
                           controller: areaCtrl,
                           requiredField: true,
                           isNumber: true,
+                          validator: (v) {
+                            final raw = v?.trim() ?? '';
+                            if (raw.isEmpty) return 'Vui lòng nhập Diện tích';
+                            final n = double.tryParse(raw);
+                            if (n == null || n <= 0) return 'Diện tích phải lớn hơn 0';
+                            return null;
+                          },
                         ),
                       ),
                       const SizedBox(width: AppSpacing.md),
@@ -494,7 +508,7 @@ class RoomDetailPage extends StatelessWidget {
                   const Divider(height: 1),
                   _KeyValueRow(
                     label: 'Diện tích',
-                    value: '${room.area.toStringAsFixed(0)} m²',
+                    value: '${AppFormatters.area(room.area)} m²',
                   ),
                   const Divider(height: 1),
                   _KeyValueRow(
