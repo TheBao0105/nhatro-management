@@ -148,6 +148,11 @@ class _Server {
           }
           return _json(rooms);
         }
+        final roomMatch = RegExp(r'^/api/rooms/(\d+)/$').firstMatch(path);
+        if (roomMatch != null && req.method == 'DELETE') {
+          rooms.removeWhere((r) => r['id'] == int.parse(roomMatch.group(1)!));
+          return _json({'message': 'ok'});
+        }
         final statusMatch = RegExp(r'^/api/rooms/(\d+)/status/$').firstMatch(path);
         if (statusMatch != null) {
           final r = rooms.firstWhere((r) => r['id'] == int.parse(statusMatch.group(1)!));
@@ -368,6 +373,98 @@ void main() {
       expect(find.text('Chưa có phòng nào được gán.'), findsNothing);
       expect(find.textContaining('Không tải được danh sách phòng'), findsOneWidget);
     });
+
+    testWidgets(
+        '[QLNT-302] Phân trang danh sách nhà trọ (>6 phần tử): hiển thị 6 phần tử trang đầu, chuyển trang Sau/Trước, chặn biên trang 0 và vượt trang cuối, xử lý danh sách 1 trang',
+        (tester) async {
+      // Trường hợp 1 trang (2 phần tử mặc định): chỉ có trang 1, nút Trước và Sau đều bị vô hiệu hóa.
+      await openApp(tester, '/property');
+      expect(find.text('Hiển thị 1–2 trong tổng số 2 bản ghi'), findsOneWidget);
+      expect(find.descendant(of: find.byType(PaginationWidget), matching: find.text('1')), findsOneWidget);
+      expect(find.descendant(of: find.byType(PaginationWidget), matching: find.text('2')), findsNothing);
+      await tapVisible(tester, find.descendant(of: find.byType(PaginationWidget), matching: find.text('Trước')));
+      expect(find.text('Hiển thị 1–2 trong tổng số 2 bản ghi'), findsOneWidget);
+      await tapVisible(tester, find.descendant(of: find.byType(PaginationWidget), matching: find.text('Sau')));
+      expect(find.text('Hiển thị 1–2 trong tổng số 2 bản ghi'), findsOneWidget);
+
+      // Trường hợp > 6 phần tử (8 nhà trọ: trang 1 có 6 phần tử, trang 2 có 2 phần tử).
+      server.properties
+        ..clear()
+        ..addAll([for (var i = 1; i <= 8; i++) _property(i, 'Tòa $i')]);
+      await repo.syncWithBackend();
+      await tester.pumpAndSettle();
+
+      // Trang đầu (trang 1): hiển thị đúng 6 phần tử đầu (Tòa 1..Tòa 6), ẩn Tòa 7..Tòa 8.
+      expect(find.text('Hiển thị 1–6 trong tổng số 8 bản ghi'), findsOneWidget);
+      for (var i = 1; i <= 6; i++) {
+        expect(find.text('Tòa $i'), findsOneWidget);
+      }
+      expect(find.text('Tòa 7'), findsNothing);
+      expect(find.text('Tòa 8'), findsNothing);
+
+      // Ở trang 1, bấm "Trước" không được chuyển về trang 0.
+      await tapVisible(tester, find.descendant(of: find.byType(PaginationWidget), matching: find.text('Trước')));
+      expect(find.text('Hiển thị 1–6 trong tổng số 8 bản ghi'), findsOneWidget);
+      expect(find.text('Tòa 1'), findsOneWidget);
+
+      // Chuyển sang trang tiếp theo bằng nút "Sau": hiển thị đúng 2 phần tử cuối (Tòa 7, Tòa 8), ẩn toàn bộ Tòa 1..6.
+      await tapVisible(tester, find.descendant(of: find.byType(PaginationWidget), matching: find.text('Sau')));
+      expect(find.text('Hiển thị 7–8 trong tổng số 8 bản ghi'), findsOneWidget);
+      expect(find.text('Tòa 7'), findsOneWidget);
+      expect(find.text('Tòa 8'), findsOneWidget);
+      for (var i = 1; i <= 6; i++) {
+        expect(find.text('Tòa $i'), findsNothing);
+      }
+
+      // Ở trang cuối (trang 2), bấm "Sau" không được vượt quá trang cuối.
+      await tapVisible(tester, find.descendant(of: find.byType(PaginationWidget), matching: find.text('Sau')));
+      expect(find.text('Hiển thị 7–8 trong tổng số 8 bản ghi'), findsOneWidget);
+      expect(find.text('Tòa 7'), findsOneWidget);
+
+      // Chuyển về trang trước bằng nút "Trước": quay lại trang 1 (đủ Tòa 1..Tòa 6, ẩn Tòa 7..Tòa 8).
+      await tapVisible(tester, find.descendant(of: find.byType(PaginationWidget), matching: find.text('Trước')));
+      expect(find.text('Hiển thị 1–6 trong tổng số 8 bản ghi'), findsOneWidget);
+      for (var i = 1; i <= 6; i++) {
+        expect(find.text('Tòa $i'), findsOneWidget);
+      }
+      expect(find.text('Tòa 7'), findsNothing);
+      expect(find.text('Tòa 8'), findsNothing);
+    });
+
+    testWidgets(
+        '[QLNT-302] Khi tìm kiếm hoặc lọc trạng thái nhà trọ ở trang 2: tự động quay về trang 1 và tính lại phân trang',
+        (tester) async {
+      server.properties
+        ..clear()
+        ..addAll([
+          for (var i = 1; i <= 7; i++) _property(i, 'Tòa $i', status: 'ACTIVE'),
+          _property(8, 'Tòa Tạm Ngưng 8', status: 'INACTIVE'),
+        ]);
+      await openApp(tester, '/property');
+
+      // Chuyển sang trang 2 trước khi lọc/tìm kiếm.
+      await tapVisible(tester, find.descendant(of: find.byType(PaginationWidget), matching: find.text('2')));
+      expect(find.text('Hiển thị 7–8 trong tổng số 8 bản ghi'), findsOneWidget);
+
+      // Tìm kiếm theo từ khóa: phân trang tính toán lại về trang 1 với 1 kết quả.
+      final propSearch = find.descendant(of: find.byType(AppSearchBar), matching: find.byType(TextField));
+      await tester.enterText(propSearch, 'NT-02');
+      await tester.pumpAndSettle();
+      expect(find.text('Hiển thị 1–1 trong tổng số 1 bản ghi'), findsOneWidget);
+      expect(find.text('Tòa 2'), findsOneWidget);
+      expect(find.descendant(of: find.byType(PaginationWidget), matching: find.text('2')), findsNothing);
+
+      // Đặt lại rồi chuyển sang trang 2 và lọc theo trạng thái "Tạm ngưng".
+      await tapVisible(tester, find.text('Đặt lại'));
+      expect(find.text('Hiển thị 1–6 trong tổng số 8 bản ghi'), findsOneWidget);
+      await tapVisible(tester, find.descendant(of: find.byType(PaginationWidget), matching: find.text('2')));
+      expect(find.text('Hiển thị 7–8 trong tổng số 8 bản ghi'), findsOneWidget);
+
+      await tapVisible(tester, find.text('Tất cả trạng thái'));
+      await tapVisible(tester, find.text('Tạm ngưng').last);
+      expect(find.text('Hiển thị 1–1 trong tổng số 1 bản ghi'), findsOneWidget);
+      expect(find.text('Tòa Tạm Ngưng 8'), findsOneWidget);
+    });
   });
 
   // ==================================================================== ROOM
@@ -445,6 +542,185 @@ void main() {
       expect((jsonDecode(posts.single.body) as Map)['status'], 'MAINTENANCE');
       expect(find.text('Đã cập nhật trạng thái phòng Phòng A1.'), findsOneWidget);
       expect(repo.rooms.firstWhere((r) => r.id == 10).status, 'MAINTENANCE', reason: 'đọc lại từ backend');
+    });
+
+    testWidgets(
+        '[QLNT-315] Phân trang danh sách phòng trọ (>6 phần tử): hiển thị 6 phòng trang đầu, chuyển trang Sau/Trước, chặn biên trang 0 và vượt trang cuối, xử lý danh sách 1 trang',
+        (tester) async {
+      // Trường hợp 1 trang (3 phòng mặc định): chỉ có nút trang 1, nút Trước và Sau đều bị khóa.
+      await openApp(tester, '/rooms');
+      expect(find.text('Hiển thị 1–3 trong tổng số 3 bản ghi'), findsOneWidget);
+      expect(find.descendant(of: find.byType(PaginationWidget), matching: find.text('1')), findsOneWidget);
+      expect(find.descendant(of: find.byType(PaginationWidget), matching: find.text('2')), findsNothing);
+      await tapVisible(tester, find.descendant(of: find.byType(PaginationWidget), matching: find.text('Trước')));
+      expect(find.text('Hiển thị 1–3 trong tổng số 3 bản ghi'), findsOneWidget);
+      await tapVisible(tester, find.descendant(of: find.byType(PaginationWidget), matching: find.text('Sau')));
+      expect(find.text('Hiển thị 1–3 trong tổng số 3 bản ghi'), findsOneWidget);
+
+      // Trường hợp > 6 phần tử (8 phòng: trang 1 có 6 phòng, trang 2 có 2 phòng).
+      server.rooms
+        ..clear()
+        ..addAll([for (var i = 1; i <= 8; i++) _room(100 + i, 'Phòng P$i', 1, 'Nhà A')]);
+      await repo.syncWithBackend();
+      await tester.pumpAndSettle();
+
+      // Trang đầu (trang 1): hiển thị đúng 6 phòng đầu (Phòng P1..Phòng P6), ẩn Phòng P7..Phòng P8.
+      expect(find.text('Hiển thị 1–6 trong tổng số 8 bản ghi'), findsOneWidget);
+      for (var i = 1; i <= 6; i++) {
+        expect(find.text('Phòng P$i'), findsOneWidget);
+      }
+      expect(find.text('Phòng P7'), findsNothing);
+      expect(find.text('Phòng P8'), findsNothing);
+
+      // Ở trang 1, bấm "Trước" không được chuyển về trang 0.
+      await tapVisible(tester, find.descendant(of: find.byType(PaginationWidget), matching: find.text('Trước')));
+      expect(find.text('Hiển thị 1–6 trong tổng số 8 bản ghi'), findsOneWidget);
+      expect(find.text('Phòng P1'), findsOneWidget);
+
+      // Chuyển sang trang tiếp theo bằng nút "Sau": hiển thị đúng 2 phòng cuối (Phòng P7, Phòng P8), ẩn toàn bộ Phòng P1..P6.
+      await tapVisible(tester, find.descendant(of: find.byType(PaginationWidget), matching: find.text('Sau')));
+      expect(find.text('Hiển thị 7–8 trong tổng số 8 bản ghi'), findsOneWidget);
+      expect(find.text('Phòng P7'), findsOneWidget);
+      expect(find.text('Phòng P8'), findsOneWidget);
+      for (var i = 1; i <= 6; i++) {
+        expect(find.text('Phòng P$i'), findsNothing);
+      }
+
+      // Ở trang cuối (trang 2), bấm "Sau" không được vượt quá trang cuối.
+      await tapVisible(tester, find.descendant(of: find.byType(PaginationWidget), matching: find.text('Sau')));
+      expect(find.text('Hiển thị 7–8 trong tổng số 8 bản ghi'), findsOneWidget);
+      expect(find.text('Phòng P7'), findsOneWidget);
+
+      // Chuyển về trang trước bằng nút "Trước": quay lại trang 1 (đủ Phòng P1..Phòng P6, ẩn Phòng P7..P8).
+      await tapVisible(tester, find.descendant(of: find.byType(PaginationWidget), matching: find.text('Trước')));
+      expect(find.text('Hiển thị 1–6 trong tổng số 8 bản ghi'), findsOneWidget);
+      for (var i = 1; i <= 6; i++) {
+        expect(find.text('Phòng P$i'), findsOneWidget);
+      }
+      expect(find.text('Phòng P7'), findsNothing);
+      expect(find.text('Phòng P8'), findsNothing);
+
+      // Chuyển sang chế độ hiển thị "Thẻ" (GridView): phân trang vẫn giữ đồng bộ 6 thẻ trang 1 và 2 thẻ trang 2.
+      await tapVisible(tester, find.text('Thẻ'));
+      expect(find.text('Hiển thị 1–6 trong tổng số 8 bản ghi'), findsOneWidget);
+      expect(find.text('Phòng P1'), findsOneWidget);
+      expect(find.text('Phòng P7'), findsNothing);
+      await tapVisible(tester, find.descendant(of: find.byType(PaginationWidget), matching: find.text('2')));
+      expect(find.text('Hiển thị 7–8 trong tổng số 8 bản ghi'), findsOneWidget);
+      expect(find.text('Phòng P7'), findsOneWidget);
+      expect(find.text('Phòng P8'), findsOneWidget);
+      expect(find.text('Phòng P1'), findsNothing);
+      await tapVisible(tester, find.text('Bảng'));
+    });
+
+    testWidgets(
+        '[QLNT-315] Khi tìm kiếm hoặc lọc phòng trọ (nhà trọ/trạng thái/mức giá) ở trang 2: tự động quay về trang 1 và tính lại phân trang',
+        (tester) async {
+      server.rooms
+        ..clear()
+        ..addAll([
+          for (var i = 1; i <= 6; i++) _room(100 + i, 'Phòng A$i', 1, 'Nhà A', status: 'AVAILABLE', price: 2800000),
+          _room(107, 'Phòng B7', 2, 'Nhà B', status: 'OCCUPIED', price: 4500000),
+          _room(108, 'Phòng B8', 2, 'Nhà B', status: 'OCCUPIED', price: 4800000),
+        ]);
+      await openApp(tester, '/rooms');
+
+      // 1. Sang trang 2 rồi gõ tìm kiếm: tự động về trang 1 với số lượng bản ghi mới.
+      await tapVisible(tester, find.descendant(of: find.byType(PaginationWidget), matching: find.text('2')));
+      expect(find.text('Hiển thị 7–8 trong tổng số 8 bản ghi'), findsOneWidget);
+
+      final roomSearch = find.descendant(of: find.byType(AppSearchBar), matching: find.byType(TextField));
+      await tester.enterText(roomSearch, 'A3');
+      await tester.pumpAndSettle();
+      expect(find.text('Hiển thị 1–1 trong tổng số 1 bản ghi'), findsOneWidget);
+      expect(find.text('Phòng A3'), findsOneWidget);
+      expect(find.descendant(of: find.byType(PaginationWidget), matching: find.text('2')), findsNothing);
+
+      // 2. Đặt lại bộ lọc, sang trang 2 rồi lọc theo trạng thái "Đang thuê": về trang 1 hiển thị 2 phòng B7, B8.
+      await tapVisible(tester, find.text('Đặt lại'));
+      expect(find.text('Hiển thị 1–6 trong tổng số 8 bản ghi'), findsOneWidget);
+      await tapVisible(tester, find.descendant(of: find.byType(PaginationWidget), matching: find.text('2')));
+      expect(find.text('Hiển thị 7–8 trong tổng số 8 bản ghi'), findsOneWidget);
+
+      await tapVisible(tester, find.text('Tất cả trạng thái'));
+      await tapVisible(tester, find.text('Đang thuê').last);
+      expect(find.text('Hiển thị 1–2 trong tổng số 2 bản ghi'), findsOneWidget);
+      expect(find.text('Phòng B7'), findsOneWidget);
+      expect(find.text('Phòng B8'), findsOneWidget);
+      expect(find.descendant(of: find.byType(PaginationWidget), matching: find.text('2')), findsNothing);
+
+      // 3. Đặt lại bộ lọc, sang trang 2 rồi lọc theo tòa nhà "Nhà B": về trang 1 hiển thị 2 phòng B7, B8.
+      await tapVisible(tester, find.text('Đặt lại'));
+      await tapVisible(tester, find.descendant(of: find.byType(PaginationWidget), matching: find.text('2')));
+      expect(find.text('Hiển thị 7–8 trong tổng số 8 bản ghi'), findsOneWidget);
+
+      await tapVisible(tester, find.text('Tất cả tòa nhà'));
+      await tapVisible(tester, find.text('Nhà B').last);
+      expect(find.text('Hiển thị 1–2 trong tổng số 2 bản ghi'), findsOneWidget);
+      expect(find.text('Phòng B7'), findsOneWidget);
+      expect(find.text('Phòng B8'), findsOneWidget);
+
+      // 4. Đặt lại bộ lọc, sang trang 2 rồi lọc theo mức giá "Trên 4.000.000 đ": về trang 1 hiển thị 2 phòng B7, B8.
+      await tapVisible(tester, find.text('Đặt lại'));
+      await tapVisible(tester, find.descendant(of: find.byType(PaginationWidget), matching: find.text('2')));
+      expect(find.text('Hiển thị 7–8 trong tổng số 8 bản ghi'), findsOneWidget);
+
+      await tapVisible(tester, find.text('Tất cả mức giá'));
+      await tapVisible(tester, find.text('Trên 4.000.000 đ').last);
+      expect(find.text('Hiển thị 1–2 trong tổng số 2 bản ghi'), findsOneWidget);
+      expect(find.text('Phòng B7'), findsOneWidget);
+      expect(find.text('Phòng B8'), findsOneWidget);
+    });
+
+    testWidgets(
+        '[QLNT-315] Xóa phòng ở trang cuối khiến trang hiện tại không còn hợp lệ: tự động lùi về trang cuối còn dữ liệu',
+        (tester) async {
+      server.rooms
+        ..clear()
+        ..addAll([for (var i = 1; i <= 7; i++) _room(200 + i, 'Phòng X$i', 1, 'Nhà A')]);
+      await openApp(tester, '/rooms');
+
+      // Sang trang 2 (chỉ có 1 phòng duy nhất là Phòng X7).
+      await tapVisible(tester, find.descendant(of: find.byType(PaginationWidget), matching: find.text('2')));
+      expect(find.text('Hiển thị 7–7 trong tổng số 7 bản ghi'), findsOneWidget);
+      expect(find.text('Phòng X7'), findsOneWidget);
+      expect(find.text('Phòng X1'), findsNothing);
+
+      // Xóa Phòng X7 ở trang 2 -> trang 2 không còn tồn tại, giao diện tự động lùi về trang 1 (6 bản ghi).
+      await tapVisible(tester, find.byTooltip('Xóa phòng'));
+      await tapVisible(tester, find.text('Xác nhận xóa'));
+
+      expect(server.writes('DELETE', '/api/rooms/207/'), hasLength(1));
+      expect(find.text('Đã xóa Phòng X7'), findsOneWidget);
+      expect(find.text('Phòng X7'), findsNothing);
+      for (var i = 1; i <= 6; i++) {
+        expect(find.text('Phòng X$i'), findsOneWidget, reason: 'tự động lùi về trang 1 hiển thị đủ 6 phòng còn lại');
+      }
+      expect(find.text('Hiển thị 1–6 trong tổng số 6 bản ghi'), findsOneWidget);
+      expect(find.descendant(of: find.byType(PaginationWidget), matching: find.text('2')), findsNothing);
+    });
+
+    testWidgets(
+        '[QLNT-302, QLNT-315] PaginationWidget xử lý trực tiếp danh sách 0 bản ghi và khóa nút Trước/Sau ở biên',
+        (tester) async {
+      int? changedTo;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: PaginationWidget(
+              currentPage: 1,
+              totalItems: 0,
+              pageSize: 6,
+              onPageChanged: (p) => changedTo = p,
+            ),
+          ),
+        ),
+      );
+      expect(find.text('Hiển thị 0–0 trong tổng số 0 bản ghi'), findsOneWidget);
+      await tester.tap(find.text('Trước'));
+      await tester.tap(find.text('Sau'));
+      await tester.pump();
+      expect(changedTo, isNull, reason: 'danh sách rỗng khóa cả hai nút Trước và Sau');
     });
   });
 

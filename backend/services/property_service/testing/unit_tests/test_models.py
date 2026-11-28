@@ -56,13 +56,14 @@ class PropertyModelTests(TestCase):
             Property.objects.create(name='B', address='b', code='ABC-1')
 
     def test_property_field_validations_and_boundaries(self):
-        """S2-MOD-004 | [Gộp S2-MOD-010, 011, 012, 013] Kiểm tra full_clean cho name, address, status và biên độ dài name (150/151) | Data: name='', address='', status='BOGUS', name 150 & 151 ký tự | Expected: ValidationError đúng trường"""
-        Property(name='x' * 150, address='a').full_clean()
+        """S2-MOD-004 | [Gộp S2-MOD-010, 011, 012, 013] Kiểm tra full_clean cho name, address, status, total_floors>=1 và biên độ dài name (150/151) | Data: name='', address='', status='BOGUS', total_floors=0, name 150 & 151 ký tự | Expected: ValidationError đúng trường"""
+        Property(name='x' * 150, address='a', total_floors=1).full_clean()
         cases = [
             ({'name': '', 'address': 'a'}, 'name'),
             ({'name': 'A', 'address': ''}, 'address'),
             ({'name': 'A', 'address': 'a', 'status': 'BOGUS'}, 'status'),
             ({'name': 'x' * 151, 'address': 'a'}, 'name'),
+            ({'name': 'A', 'address': 'a', 'total_floors': 0}, 'total_floors'),
         ]
         for kwargs, field in cases:
             with self.subTest(field=field, kwargs=kwargs):
@@ -114,15 +115,15 @@ class RoomModelTests(TestCase):
         self.assertEqual(set(RENTED_STATUSES), {RoomStatus.OCCUPIED, RoomStatus.FULL})
         self.assertEqual(set(RoomType.values), {'SINGLE', 'MEZZANINE', 'STUDIO', 'ONE_BED', 'DORM'})
 
-        make_room(self.prop, room_number='101', floor=2)
+        make_room(self.prop, room_number='099', floor=2)
         make_room(self.prop, room_number='102', floor=1)
-        self.assertEqual([(r.floor, r.room_number) for r in Room.objects.all()], [(1, '101'), (1, '102'), (2, '101')])
+        self.assertEqual([(r.floor, r.room_number) for r in Room.objects.all()], [(1, '101'), (1, '102'), (2, '099')])
 
     def test_room_auto_code_normalization_and_collision_suffix(self):
-        """S2-MOD-008 | [Gộp S2-MOD-020, 021, 022] Tự sinh mã phòng, chuẩn hóa ký tự đặc biệt và thêm hậu tố '-2' khi trùng | Data: '101', 'a-01 vip', trùng '101' | Expected: 'NT001-101', 'NT001-A01VIP', 'NT001-101-2'"""
+        """S2-MOD-008 | [Gộp S2-MOD-020, 021, 022] Tự sinh mã phòng, chuẩn hóa ký tự đặc biệt và thêm hậu tố '-2' khi trùng | Data: '101', 'a-01 vip', '10-1' (chuẩn hóa trùng mã 'NT001-101') | Expected: 'NT001-101', 'NT001-A01VIP', 'NT001-101-2'"""
         r1 = make_room(self.prop, room_number='101')
         r_norm = make_room(self.prop, room_number='a-01 vip')
-        r2 = make_room(self.prop, room_number='101')
+        r2 = make_room(self.prop, room_number='10-1')
         self.assertEqual((r1.code, r_norm.code, r2.code), ('NT001-101', 'NT001-A01VIP', 'NT001-101-2'))
 
     def test_room_explicit_code_unique_and_property_fk_required(self):
@@ -134,9 +135,18 @@ class RoomModelTests(TestCase):
         with self.assertRaises(IntegrityError), transaction.atomic():
             Room.objects.create(room_number='NoProp', rent_price=1)
 
+    def test_room_unique_room_number_per_property_constraint(self):
+        """S2-MOD-016 | UniqueConstraint (property, room_number) ở tầng Database | Data: trùng room_number='101' cùng nhà trọ vs khác nhà trọ | Expected: IntegrityError khi cùng Property; thành công khi khác Property"""
+        make_room(self.prop, room_number='101', code='C1')
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            make_room(self.prop, room_number='101', code='C2')
+        other_prop = make_property(name='Nhà Khác', code='NT002')
+        other_room = make_room(other_prop, room_number='101', code='C3')
+        self.assertEqual((other_room.property_id, other_room.room_number), (other_prop.id, '101'))
+
     def test_room_field_validations_and_bug_fixes(self):
-        """S2-MOD-010 | [Gộp S2-MOD-030..037] Kiểm tra full_clean của Room (BUG-01 rent_price<0, BUG-02 area<=0, BUG-04 max_occupants<1, biên max_digits=12, biên room_number=60) | Data: biên hợp lệ & không hợp lệ | Expected: ValidationError đúng trường"""
-        Room(property=self.prop, room_number='9' * 60, rent_price=Decimal('999999999999'), area=0.5, max_occupants=1).full_clean()
+        """S2-MOD-010 | [Gộp S2-MOD-030..037] Kiểm tra full_clean của Room (BUG-01 rent_price/deposit_amount<0, BUG-02 area<=0, BUG-04 max_occupants<1, chỉ số điện/nước ban đầu<0, biên max_digits=12, biên room_number=60) | Data: biên hợp lệ & không hợp lệ | Expected: ValidationError đúng trường"""
+        Room(property=self.prop, room_number='9' * 60, rent_price=Decimal('999999999999'), deposit_amount=0, area=0.5, max_occupants=1).full_clean()
         invalid_cases = [
             ({'status': 'BOGUS'}, 'status'),
             ({'max_occupants': -1}, 'max_occupants'),
@@ -144,6 +154,9 @@ class RoomModelTests(TestCase):
             ({'current_occupants': -1}, 'current_occupants'),
             ({'rent_price': Decimal(10 ** 12)}, 'rent_price'),
             ({'rent_price': -1}, 'rent_price'),
+            ({'deposit_amount': -1}, 'deposit_amount'),
+            ({'initial_electric_reading': -0.1}, 'initial_electric_reading'),
+            ({'initial_water_reading': -0.1}, 'initial_water_reading'),
             ({'area': -5}, 'area'),
             ({'area': 0}, 'area'),
             ({'room_number': '9' * 61}, 'room_number'),

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_search_bar.dart';
 import '../../../core/widgets/app_select.dart';
@@ -267,7 +268,7 @@ class _PropertyPageState extends State<PropertyPage> {
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
-                                '${r.name} · ${r.area.toStringAsFixed(0)} m²',
+                                '${r.name} · ${AppFormatters.area(r.area)} m²',
                                 style: AppTypography.bodyMedium,
                               ),
                             ),

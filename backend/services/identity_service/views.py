@@ -3,8 +3,9 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db.models import Q
@@ -17,6 +18,7 @@ from .serializers import (
     ProfileSerializer,
     RegisterSerializer,
     CustomTokenObtainPairSerializer,
+    CustomTokenRefreshSerializer,
     ChangePasswordSerializer,
     LogoutSerializer,
 )
@@ -29,6 +31,13 @@ class CustomLoginView(TokenObtainPairView):
     SERVICE 1 — IDENTITY: Đăng nhập hệ thống trả về JWT Token và thông tin phân quyền
     """
     serializer_class = CustomTokenObtainPairSerializer
+
+
+class CustomTokenRefreshView(TokenRefreshView):
+    """
+    SERVICE 1 — IDENTITY: Làm mới JWT Access/Refresh Token và đồng bộ lại claims từ DB
+    """
+    serializer_class = CustomTokenRefreshSerializer
 
 class RegisterView(generics.CreateAPIView):
     """
@@ -73,7 +82,7 @@ class LogoutView(APIView):
 
 class ChangePasswordView(APIView):
     """
-    SERVICE 1 — IDENTITY: Đổi mật khẩu người dùng hiện tại.
+    SERVICE 1 — IDENTITY: Đổi mật khẩu người dùng hiện tại và thu hồi các refresh token cũ.
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -83,6 +92,8 @@ class ChangePasswordView(APIView):
         user = request.user if isinstance(request.user, User) else User.objects.get(pk=request.user.id)
         user.set_password(serializer.validated_data['new_password'])
         user.save(update_fields=['password'])
+        for outstanding in OutstandingToken.objects.filter(user=user):
+            BlacklistedToken.objects.get_or_create(token=outstanding)
         return Response({'detail': 'Đổi mật khẩu thành công.'}, status=status.HTTP_200_OK)
 
 
@@ -146,8 +157,8 @@ class UserViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(
                 Q(role=UserRole.TENANT, id__in=self._landlord_tenant_user_ids()) | Q(id=user.id))
 
-        if role_filter:
-            queryset = queryset.filter(role=role_filter)
+        if role_filter and role_filter != 'ALL':
+            queryset = queryset.filter(role=role_filter.upper())
 
         return queryset
 

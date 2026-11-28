@@ -7,7 +7,7 @@ from decimal import Decimal
 
 from django.test import TestCase
 
-from services.property_service.models import MaintenanceRequest, MaintenanceStatus, PropertyStatus, Room
+from services.property_service.models import MaintenanceRequest, MaintenanceStatus, PropertyStatus, Room, RoomStatus
 from services.property_service.serializers import PropertySerializer, RoomSerializer
 from .base import OWNER_ID, fake_user, make_property, make_room, serializer_context
 
@@ -75,17 +75,27 @@ class PropertySerializerTests(TestCase):
         self.assertIn('status', bad.errors)
 
     def test_property_numeric_and_utility_rates_validation(self):
-        """S2-SER-005 | [Gộp S2-SER-010, 011, 012 — BUG-03] Chặn total_floors sai kiểu/âm và chặn đơn giá điện/nước/internet âm | Data: total_floors='abc'/-1, rates=-1 | Expected: is_valid=False ở từng trường"""
-        for val in ('abc', -1):
+        """S2-SER-005 | [Gộp S2-SER-010, 011, 012 — BUG-03] Chặn total_floors sai kiểu/<=0 hoặc nhỏ hơn tầng phòng hiện có, và chặn đơn giá điện/nước/internet âm | Data: total_floors='abc'/-1/0, giảm tầng < phòng hiện có, rates=-1 | Expected: is_valid=False ở từng trường"""
+        for val in ('abc', -1, 0):
             with self.subTest(total_floors=val):
                 ser = self.valid(total_floors=val)
                 self.assertFalse(ser.is_valid())
                 self.assertIn('total_floors', ser.errors)
+        self.assertTrue(self.valid(total_floors=3).is_valid())
         for field in ('electricity_rate', 'water_rate', 'internet_rate'):
             with self.subTest(rate_field=field):
                 ser = self.valid(**{field: -1})
                 self.assertFalse(ser.is_valid())
                 self.assertIn(field, ser.errors)
+
+        prop = make_property(total_floors=4)
+        make_room(prop, room_number='301', floor=3)
+        shrink_bad = PropertySerializer(prop, data={'total_floors': 2}, partial=True, context=serializer_context())
+        self.assertFalse(shrink_bad.is_valid())
+        self.assertIn('total_floors', shrink_bad.errors)
+
+        shrink_ok = PropertySerializer(prop, data={'total_floors': 3}, partial=True, context=serializer_context())
+        self.assertTrue(shrink_ok.is_valid(), shrink_ok.errors)
 
     def test_property_duplicate_code_and_invalid_image_url_rejected(self):
         """S2-SER-006 | [Gộp S2-SER-013, 014] Chặn trùng code UNIQUE và image_url sai định dạng URL | Data: code='DUP', image_url='not-a-url' | Expected: lỗi ở 'code' và 'image_url'"""
@@ -159,17 +169,22 @@ class RoomSerializerTests(TestCase):
                 self.assertIn('property', ser.errors)
 
     def test_room_numeric_types_and_bug_validators(self):
-        """S2-SER-011 | [Gộp S2-SER-023, 025..031 — BUG-01, BUG-02, BUG-04] Kiểm tra sai kiểu số, giá âm/thập phân/vượt 12 chữ số, diện tích <=0, max_occupants <=0 | Data: parameterized invalid values | Expected: is_valid=False đúng trường"""
-        self.assertTrue(self.ser(rent_price=999999999999).is_valid())
+        """S2-SER-011 | [Gộp S2-SER-023, 025..031 — BUG-01, BUG-02, BUG-04] Kiểm tra sai kiểu số, giá thuê/tiền cọc/chỉ số công tơ âm, thập phân/vượt 12 chữ số, diện tích <=0, tầng ngoài phạm vi 1..total_floors, max_occupants <=0 | Data: parameterized invalid values | Expected: is_valid=False đúng trường"""
+        self.assertTrue(self.ser(rent_price=999999999999, deposit_amount=0).is_valid())
         invalid_cases = [
             ('rent_price', 'abc'),
             ('rent_price', -1),
             ('rent_price', '3000000.50'),
             ('rent_price', 10 ** 12),
+            ('deposit_amount', -1),
+            ('initial_electric_reading', -1),
+            ('initial_water_reading', -1),
             ('area', 'abc'),
             ('area', -5),
             ('area', 0),
             ('floor', 'abc'),
+            ('floor', 0),
+            ('floor', self.prop.total_floors + 1),
             ('max_occupants', 'abc'),
             ('max_occupants', -1),
             ('max_occupants', 0),
@@ -252,3 +267,85 @@ class RoomSerializerTests(TestCase):
             sorted(Decimal(str(d['rent_price'])) for d in data),
             [Decimal('1000000'), Decimal('2000000'), Decimal('3000000')],
         )
+
+    def test_property_serializer_blocks_deleted_status_when_active_rooms_exist(self):
+        """S2-SER-019 | PropertySerializer.validate_status chặn đặt status=DELETED khi nhà trọ còn phòng hoạt động | Data: nhà có phòng AVAILABLE vs nhà chỉ có phòng INACTIVE | Expected: is_valid=False (lỗi 'status') khi còn phòng hoạt động; is_valid=True khi phòng đã INACTIVE hoặc đổi sang INACTIVE"""
+        make_room(self.prop, room_number='101', status=RoomStatus.AVAILABLE)
+        ser_blocked = PropertySerializer(self.prop, data={'status': 'DELETED'}, partial=True,
+                                         context=serializer_context())
+        self.assertFalse(ser_blocked.is_valid())
+        self.assertIn('status', ser_blocked.errors)
+
+        ser_inactive = PropertySerializer(self.prop, data={'status': 'INACTIVE'}, partial=True,
+                                          context=serializer_context())
+        self.assertTrue(ser_inactive.is_valid(), ser_inactive.errors)
+
+        self.prop.rooms.update(status=RoomStatus.INACTIVE)
+        ser_allowed = PropertySerializer(self.prop, data={'status': 'DELETED'}, partial=True,
+                                         context=serializer_context())
+        self.assertTrue(ser_allowed.is_valid(), ser_allowed.errors)
+
+    def test_room_serializer_blocks_duplicate_room_number_in_same_property(self):
+        """S2-SER-020 | RoomSerializer.validate chặn trùng room_number (không phân biệt hoa thường) trong cùng Property và cho phép ở Property khác hoặc cập nhật chính nó | Data: 'A101' vs 'a101' cùng nhà, 'A101' khác nhà | Expected: is_valid=False (lỗi 'room_number') khi trùng; is_valid=True khi hợp lệ"""
+        r1 = make_room(self.prop, room_number='A101', rent_price=3000000)
+        r2 = make_room(self.prop, room_number='A102', rent_price=3000000)
+
+        dup_create = RoomSerializer(data={'property': self.prop.id, 'room_number': ' a101 ', 'rent_price': 3000000},
+                                    context=serializer_context())
+        self.assertFalse(dup_create.is_valid())
+        self.assertIn('room_number', dup_create.errors)
+
+        dup_update = RoomSerializer(r2, data={'room_number': 'a101'}, partial=True, context=serializer_context())
+        self.assertFalse(dup_update.is_valid())
+        self.assertIn('room_number', dup_update.errors)
+
+        self_update = RoomSerializer(r1, data={'room_number': 'A101', 'rent_price': 3500000}, partial=True,
+                                     context=serializer_context())
+        self.assertTrue(self_update.is_valid(), self_update.errors)
+
+        other_prop = make_property(code='P2', name='Nhà 2')
+        other_create = RoomSerializer(data={'property': other_prop.id, 'room_number': 'A101', 'rent_price': 3000000},
+                                      context=serializer_context())
+        self.assertTrue(other_create.is_valid(), other_create.errors)
+
+    def test_room_serializer_blocks_deleted_property_and_normalizes_status_invariants(self):
+        """S2-SER-021 | RoomSerializer.validate chặn tạo/chuyển phòng vào Property đã DELETED, chặn đặt INACTIVE khi phòng đang có người ở, và đồng bộ current_occupants theo status (OCCUPIED/FULL/AVAILABLE) | Data: property DELETED, status OCCUPIED/FULL/AVAILABLE/INACTIVE | Expected: báo lỗi khi không hợp lệ; tự chuẩn hóa số người & thông tin khách thuê khi hợp lệ"""
+        deleted_prop = make_property(code='DEL', status=PropertyStatus.DELETED)
+        ser_del = RoomSerializer(data=room_payload(deleted_prop, room_number='D1'), context=serializer_context())
+        self.assertFalse(ser_del.is_valid())
+        self.assertIn('property', ser_del.errors)
+
+        ser_occ = self.ser(room_number='O1', status=RoomStatus.OCCUPIED, current_occupants=0, max_occupants=2)
+        self.assertTrue(ser_occ.is_valid(), ser_occ.errors)
+        r_occ = ser_occ.save()
+        self.assertEqual((r_occ.status, r_occ.current_occupants), (RoomStatus.OCCUPIED, 1))
+
+        ser_occ_full = self.ser(room_number='O2', status=RoomStatus.OCCUPIED, current_occupants=2, max_occupants=2)
+        self.assertTrue(ser_occ_full.is_valid(), ser_occ_full.errors)
+        r_occ_full = ser_occ_full.save()
+        self.assertEqual((r_occ_full.status, r_occ_full.current_occupants), (RoomStatus.FULL, 2))
+
+        ser_full = self.ser(room_number='F1', status=RoomStatus.FULL, max_occupants=3)
+        self.assertTrue(ser_full.is_valid(), ser_full.errors)
+        r_full = ser_full.save()
+        self.assertEqual((r_full.status, r_full.current_occupants), (RoomStatus.FULL, 3))
+
+        ser_inact = RoomSerializer(r_occ, data={'status': RoomStatus.INACTIVE}, partial=True,
+                                   context=serializer_context())
+        self.assertFalse(ser_inact.is_valid())
+        self.assertIn('status', ser_inact.errors)
+
+        r_occ. tenant_name = 'Nguyễn A'
+        r_occ.tenant_phone = '0900'
+        r_occ.save()
+        ser_avail = RoomSerializer(r_occ, data={'status': RoomStatus.AVAILABLE}, partial=True,
+                                   context=serializer_context())
+        self.assertTrue(ser_avail.is_valid(), ser_avail.errors)
+        r_avail = ser_avail.save()
+        self.assertEqual((r_avail.status, r_avail.current_occupants, r_avail.tenant_name, r_avail.tenant_phone),
+                         (RoomStatus.AVAILABLE, 0, '', ''))
+
+        ser_inact_ok = RoomSerializer(r_avail, data={'status': RoomStatus.INACTIVE}, partial=True,
+                                      context=serializer_context())
+        self.assertTrue(ser_inact_ok.is_valid(), ser_inact_ok.errors)
+        self.assertEqual(ser_inact_ok.save().status, RoomStatus.INACTIVE)

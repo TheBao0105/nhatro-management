@@ -183,6 +183,41 @@ class ScopedQuerysetTests(TestCase):
         self.assertEqual(list(scoped_maintenance(fake_user(user_id=OWNER_ID, role='LANDLORD'))), [m1])
         self.assertEqual(list(scoped_maintenance(fake_user(user_id=666, role='TENANT'))), [m2])
 
+    def test_room_external_block_reason_checks_tenants_and_contracts(self):
+        """S2-BIZ-022 | room_external_block_reason và fetch_room_contracts kiểm tra liên kết khách thuê/hợp đồng từ Tenant Service & Contract Service trước khi xóa phòng | Data: tenant ACTIVE/MOVED_OUT, contract ACTIVE/DRAFT/EXTENDED/TERMINATED, lỗi 503 | Expected: trả lý do chặn khi còn liên kết, None khi đã kết thúc, DependencyUnavailable khi phản hồi lỗi"""
+        from common.service_client import DependencyUnavailable, fetch_room_contracts, room_external_block_reason
+        from common.testing import fake_http_response
+
+        def make_auth_user():
+            u = fake_user(user_id=OWNER_ID, role='LANDLORD')
+            u.token = 'fake-jwt-token'
+            return u
+
+        with mock.patch('common.service_client.requests.get', side_effect=[
+            fake_http_response(200, [{'tenant_id': 1, 'user_id': 555, 'room_id': self.r1.id, 'status': 'ACTIVE'}]),
+        ]):
+            reason_tenant = room_external_block_reason(make_auth_user(), self.r1.id)
+        self.assertIn('hồ sơ khách thuê', reason_tenant)
+
+        for contract_status in ('DRAFT', 'ACTIVE', 'EXTENDED'):
+            with self.subTest(contract_status=contract_status):
+                with mock.patch('common.service_client.requests.get', side_effect=[
+                    fake_http_response(200, [{'tenant_id': 1, 'room_id': self.r1.id, 'status': 'MOVED_OUT'}]),
+                    fake_http_response(200, {'results': [{'id': 9, 'room_id': self.r1.id, 'status': contract_status}]}),
+                ]):
+                    reason_contract = room_external_block_reason(make_auth_user(), self.r1.id)
+                self.assertIn('hợp đồng', reason_contract)
+
+        with mock.patch('common.service_client.requests.get', side_effect=[
+            fake_http_response(200, [{'tenant_id': 1, 'room_id': self.r1.id, 'status': 'MOVED_OUT'}]),
+            fake_http_response(200, [{'id': 9, 'room_id': self.r1.id, 'status': 'TERMINATED'}]),
+        ]):
+            self.assertIsNone(room_external_block_reason(make_auth_user(), self.r1.id))
+
+        with mock.patch('common.service_client.requests.get', return_value=fake_http_response(500, {'detail': 'err'})):
+            with self.assertRaises(DependencyUnavailable):
+                fetch_room_contracts('Bearer x', self.r1.id)
+
 
 class MaintenanceViewSetUnitTests(TestCase):
     """[PURE UNIT — Ngoài Sprint 1] Kiểm thử trực tiếp các method nghiệp vụ của MaintenanceRequestViewSet mà không tắt SPRINT_FEATURE_LOCK."""
@@ -360,3 +395,402 @@ class MaintenanceViewSetUnitTests(TestCase):
         self.assertEqual(res_ok.status_code, status.HTTP_200_OK)
         req.refresh_from_db()
         self.assertEqual(req.status, MaintenanceStatus.CANCELLED)
+
+
+class PropertyAndRoomViewSetUnitTests(TestCase):
+    """[PURE UNIT — Sprint 1] Kiểm thử đơn vị trực tiếp các method nghiệp vụ và queryset của PropertyViewSet & RoomViewSet (không qua HTTP)."""
+
+    def setUp(self):
+        self.landlord = fake_user(user_id=OWNER_ID, role='LANDLORD', full_name='Chủ trọ A')
+        self.other_landlord = fake_user(user_id=OTHER_OWNER_ID, role='LANDLORD', full_name='Chủ trọ B')
+        self.tenant = fake_user(user_id=555, role='TENANT')
+        self.p1 = make_property(
+            code='NT01', owner_id=OWNER_ID, name='Hoa Mai Boarding',
+            address='12 Nguyễn Gia Trí', ward='Phường 25', district='Bình Thạnh',
+            city='TP. Hồ Chí Minh', total_floors=3, status=PropertyStatus.ACTIVE,
+        )
+        self.p2 = make_property(
+            code='NT02', owner_id=OWNER_ID, name='Happy House',
+            address='88 Đường số 7', ward='Tân Phong', district='Quận 7',
+            city='TP. Hồ Chí Minh', total_floors=2, status=PropertyStatus.INACTIVE,
+        )
+        self.p_del = make_property(
+            code='NT03', owner_id=OWNER_ID, name='Nhà Đã Xóa',
+            address='99 Đường Cũ', ward='Phường 1', district='Quận 1',
+            total_floors=2, status=PropertyStatus.DELETED,
+        )
+        self.p_other = make_property(
+            code='NT99', owner_id=OTHER_OWNER_ID, name='Nhà Chủ Khác',
+            address='1 Lê Lợi', district='Quận 1',
+        )
+
+    def _prop_view(self, action='list', user=None, query_params=None, data=None, pk=None):
+        from services.property_service.views import PropertyViewSet
+        view = PropertyViewSet()
+        view.action = action
+        view.format_kwarg = None
+        view.kwargs = {'pk': pk} if pk is not None else {}
+        view.request = SimpleNamespace(
+            user=user or self.landlord,
+            query_params=query_params or {},
+            data=data or {},
+            method='GET',
+        )
+        return view
+
+    def _room_view(self, action='list', user=None, query_params=None, data=None, pk=None, method='GET'):
+        from services.property_service.views import RoomViewSet
+        view = RoomViewSet()
+        view.action = action
+        view.format_kwarg = None
+        view.kwargs = {'pk': pk} if pk is not None else {}
+        view.request = SimpleNamespace(
+            user=user or self.landlord,
+            query_params=query_params or {},
+            data=data or {},
+            method=method,
+        )
+        return view
+
+    def test_property_viewset_summary_and_stats_unit_calculations_and_empty_state(self):
+        """S2-BIZ-023 | [QLNT-253] PropertyViewSet.summary() và stats() tính đúng số nhà trọ ACTIVE, số phòng theo trạng thái, tỷ lệ lấp đầy, doanh thu và khi không có dữ liệu | Data: 0 phòng -> 6 phòng + nhà INACTIVE/DELETED | Expected: loại trừ nhà DELETED/INACTIVE khỏi total_properties, tính đúng từng trạng thái"""
+        empty_user = fake_user(user_id=888, role='LANDLORD')
+        v_empty = self._prop_view(action='summary', user=empty_user)
+        res_empty = v_empty.summary(v_empty.request)
+        self.assertEqual(res_empty.data['total_properties'], 0)
+        self.assertEqual(res_empty.data['total_rooms'], 0)
+        self.assertEqual(res_empty.data['occupancy_rate_percent'], 0.0)
+        self.assertEqual(res_empty.data['estimated_monthly_revenue'], 0)
+
+        r_av = make_room(self.p1, room_number='101', status=RoomStatus.AVAILABLE, rent_price=3000000)
+        make_room(self.p1, room_number='102', status=RoomStatus.OCCUPIED, current_occupants=1, rent_price=4000000)
+        make_room(self.p1, room_number='103', status=RoomStatus.FULL, current_occupants=2, rent_price=5000000)
+        make_room(self.p1, room_number='201', status=RoomStatus.RESERVED, rent_price=3500000)
+        make_room(self.p1, room_number='202', status=RoomStatus.MAINTENANCE, rent_price=3000000)
+        make_room(self.p1, room_number='203', status=RoomStatus.INACTIVE, rent_price=2500000)
+        make_room(self.p_del, room_number='D01', status=RoomStatus.AVAILABLE, rent_price=2000000)
+        MaintenanceRequest.objects.create(room=r_av, title='Sửa khóa', status=MaintenanceStatus.PENDING)
+
+        v_sum = self._prop_view(action='summary')
+        res_sum = v_sum.summary(v_sum.request)
+        self.assertEqual(res_sum.data['total_properties'], 1)
+        self.assertEqual(res_sum.data['total_rooms'], 6)
+        self.assertEqual(res_sum.data['available_rooms'], 1)
+        self.assertEqual(res_sum.data['occupied_rooms'], 2)
+        self.assertEqual(res_sum.data['full_rooms'], 1)
+        self.assertEqual(res_sum.data['reserved_rooms'], 1)
+        self.assertEqual(res_sum.data['maintenance_rooms'], 1)
+        self.assertEqual(res_sum.data['inactive_rooms'], 1)
+        self.assertEqual(res_sum.data['occupancy_rate_percent'], 33.3)
+        self.assertEqual(res_sum.data['open_maintenance_requests'], 1)
+        self.assertEqual(res_sum.data['estimated_monthly_revenue'], Decimal('9000000'))
+
+        with patch_rented_rooms([r_av.id]):
+            v_ten = self._prop_view(action='summary', user=self.tenant)
+            self.assertNotIn('estimated_monthly_revenue', v_ten.summary(v_ten.request).data)
+
+        v_stats = self._prop_view(action='stats', pk=self.p1.pk)
+        res_stats = v_stats.stats(v_stats.request, pk=self.p1.pk)
+        self.assertEqual(res_stats.data['total_rooms'], 6)
+        self.assertEqual(res_stats.data['estimated_monthly_revenue'], Decimal('9000000'))
+
+    def test_property_viewset_get_queryset_list_status_filters_and_excludes_deleted(self):
+        """S2-BIZ-024 | [QLNT-258] PropertyViewSet.get_queryset() ẩn nhà trọ DELETED mặc định khi list, lọc đúng status/include_deleted/district/ward và xử lý danh sách rỗng | Data: ACTIVE, INACTIVE, DELETED | Expected: mặc định [NT01, NT02]; lọc ACTIVE=[NT01]; DELETED=[NT03]; ALL/include_deleted đủ 3"""
+        codes_default = sorted(p.code for p in self._prop_view(action='list').get_queryset())
+        self.assertEqual(codes_default, ['NT01', 'NT02'])
+
+        codes_active = [p.code for p in self._prop_view(action='list', query_params={'status': 'active'}).get_queryset()]
+        self.assertEqual(codes_active, ['NT01'])
+
+        codes_deleted = [p.code for p in self._prop_view(action='list', query_params={'status': 'DELETED'}).get_queryset()]
+        self.assertEqual(codes_deleted, ['NT03'])
+
+        codes_all = sorted(p.code for p in self._prop_view(action='list', query_params={'status': 'ALL'}).get_queryset())
+        self.assertEqual(codes_all, ['NT01', 'NT02', 'NT03'])
+
+        codes_inc = sorted(p.code for p in self._prop_view(action='list', query_params={'include_deleted': 'true'}).get_queryset())
+        self.assertEqual(codes_inc, ['NT01', 'NT02', 'NT03'])
+
+        codes_dist = [p.code for p in self._prop_view(action='list', query_params={'district': 'Bình Thạnh', 'ward': 'Phường 25'}).get_queryset()]
+        self.assertEqual(codes_dist, ['NT01'])
+
+        empty_qs = self._prop_view(action='list', user=fake_user(user_id=999, role='LANDLORD')).get_queryset()
+        self.assertEqual(list(empty_qs), [])
+
+    def test_property_viewset_retrieve_detail_rooms_and_room_matrix_unit(self):
+        """S2-BIZ-025 | [QLNT-262] PropertyViewSet xem chi tiết nhà trọ tồn tại, nhà trọ đã xóa mềm (DELETED), không tồn tại (Http404), danh sách rooms và sơ đồ room_matrix | Data: p1, p_del, pk=999999 | Expected: get_object trả đúng p1 và p_del; ném Http404 khi không tồn tại hoặc chủ khác"""
+        from django.http import Http404
+
+        make_room(self.p1, room_number='101', floor=1, status=RoomStatus.AVAILABLE)
+        make_room(self.p1, room_number='201', floor=2, status=RoomStatus.OCCUPIED, current_occupants=1)
+
+        v_ok = self._prop_view(action='retrieve', pk=self.p1.pk)
+        self.assertEqual(v_ok.get_object().code, 'NT01')
+
+        v_del = self._prop_view(action='retrieve', pk=self.p_del.pk)
+        self.assertEqual(v_del.get_object().status, PropertyStatus.DELETED)
+
+        for bad_pk in (999999, self.p_other.pk):
+            with self.assertRaises(Http404):
+                self._prop_view(action='retrieve', pk=bad_pk).get_object()
+
+        v_rooms = self._prop_view(action='rooms', pk=self.p1.pk, query_params={'status': 'occupied'})
+        res_rooms = v_rooms.rooms(v_rooms.request, pk=self.p1.pk)
+        self.assertEqual([r['room_number'] for r in res_rooms.data], ['201'])
+
+        v_matrix = self._prop_view(action='room_matrix', pk=self.p1.pk)
+        res_matrix = v_matrix.room_matrix(v_matrix.request, pk=self.p1.pk)
+        self.assertEqual(res_matrix.data['total_rooms'], 2)
+        self.assertEqual([f['floor_name'] for f in res_matrix.data['floors']], ['Tầng 1', 'Tầng 2'])
+
+    def test_property_viewset_destroy_and_update_status_soft_hard_delete_and_active_room_blocks(self):
+        """S2-BIZ-026 | [QLNT-270] PropertyViewSet.destroy() và update_status() chặn xóa khi còn phòng hoạt động, xóa mềm khi chỉ còn phòng INACTIVE, xóa cứng khi không có phòng, và báo 404 khi không tồn tại | Data: phòng AVAILABLE -> INACTIVE -> nhà trống | Expected: 400 khi còn phòng active; soft_deleted=True khi phòng INACTIVE; soft_deleted=False khi nhà trống"""
+        from django.http import Http404
+        from services.property_service.models import Property
+
+        with self.assertRaises(Http404):
+            v_404 = self._prop_view(action='destroy', pk=999999)
+            v_404.destroy(v_404.request, pk=999999)
+
+        room = make_room(self.p1, room_number='101', status=RoomStatus.OCCUPIED, current_occupants=1)
+        v_del = self._prop_view(action='destroy', pk=self.p1.pk)
+        res_blocked = v_del.destroy(v_del.request, pk=self.p1.pk)
+        self.assertEqual(res_blocked.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('đang thuê', res_blocked.data['error'])
+
+        v_st_bad = self._prop_view(action='update_status', pk=self.p1.pk, data={'status': 'DELETED'})
+        self.assertEqual(v_st_bad.update_status(v_st_bad.request, pk=self.p1.pk).status_code, status.HTTP_400_BAD_REQUEST)
+
+        v_st_bogus = self._prop_view(action='update_status', pk=self.p1.pk, data={'status': 'BOGUS'})
+        self.assertEqual(v_st_bogus.update_status(v_st_bogus.request, pk=self.p1.pk).status_code, status.HTTP_400_BAD_REQUEST)
+
+        room.status = RoomStatus.INACTIVE
+        room.current_occupants = 0
+        room.save()
+        res_soft = v_del.destroy(v_del.request, pk=self.p1.pk)
+        self.assertEqual(res_soft.status_code, status.HTTP_200_OK)
+        self.assertTrue(res_soft.data['soft_deleted'])
+        self.p1.refresh_from_db()
+        self.assertEqual(self.p1.status, PropertyStatus.DELETED)
+        self.assertNotIn(self.p1, list(self._prop_view(action='list').get_queryset()))
+
+        v_hard = self._prop_view(action='destroy', pk=self.p2.pk)
+        res_hard = v_hard.destroy(v_hard.request, pk=self.p2.pk)
+        self.assertEqual(res_hard.status_code, status.HTTP_200_OK)
+        self.assertFalse(res_hard.data['soft_deleted'])
+        self.assertFalse(Property.objects.filter(pk=self.p2.pk).exists())
+
+    def test_room_viewset_get_queryset_list_excludes_deleted_property_and_filters_by_status_and_property(self):
+        """S2-BIZ-027 | [QLNT-278, QLNT-282] RoomViewSet.get_queryset() loại trừ phòng của nhà trọ DELETED khi xem danh sách, lọc theo trạng thái/nhà trọ, nhưng vẫn cho xem chi tiết theo ID | Data: phòng thuộc p1, p2, p_del | Expected: list chỉ trả phòng của p1, p2; retrieve vẫn lấy được phòng của p_del"""
+        from django.http import Http404
+
+        r1 = make_room(self.p1, room_number='101', status=RoomStatus.AVAILABLE)
+        r2 = make_room(self.p2, room_number='201', status=RoomStatus.OCCUPIED, current_occupants=1)
+        r_del = make_room(self.p_del, room_number='D01', status=RoomStatus.AVAILABLE)
+
+        for list_action in ('list', 'available_rooms', 'occupied_rooms', 'maintenance_rooms'):
+            qs = self._room_view(action=list_action).get_queryset()
+            self.assertNotIn(r_del, list(qs))
+
+        qs_by_prop = self._room_view(action='list', query_params={'property_id': str(self.p1.id)}).get_queryset()
+        self.assertEqual(list(qs_by_prop), [r1])
+
+        qs_by_status = self._room_view(action='list', query_params={'status': 'occupied'}).get_queryset()
+        self.assertEqual(list(qs_by_status), [r2])
+
+        v_ret_del = self._room_view(action='retrieve', pk=r_del.pk)
+        self.assertEqual(v_ret_del.get_object(), r_del)
+        self.assertFalse(r_del.is_rentable)
+
+        with self.assertRaises(Http404):
+            self._room_view(action='retrieve', pk=999999).get_object()
+
+    def test_room_viewset_perform_create_and_update_enforce_property_ownership(self):
+        """S2-BIZ-028 | [QLNT-274, QLNT-286] RoomViewSet.perform_create() và perform_update() cho phép thao tác trên nhà trọ của mình và chặn gán/chuyển phòng sang nhà trọ của chủ khác | Data: property=p1 (hợp lệ) vs property=p_other (ValidationError) | Expected: lưu thành công cho p1; ném ValidationError cho p_other"""
+        from services.property_service.serializers import RoomSerializer
+
+        v_create = self._room_view(action='create')
+        ser_ok = RoomSerializer(
+            data={'property': self.p1.id, 'room_number': '101', 'floor': 1, 'area': 20, 'rent_price': 3000000},
+            context={'request': v_create.request},
+        )
+        self.assertTrue(ser_ok.is_valid(), ser_ok.errors)
+        v_create.perform_create(ser_ok)
+        room = ser_ok.instance
+        self.assertEqual(room.property_id, self.p1.id)
+
+        ser_bad_create = RoomSerializer(
+            data={'property': self.p_other.id, 'room_number': '901', 'floor': 1, 'area': 20, 'rent_price': 3000000},
+            context={'request': v_create.request},
+        )
+        self.assertTrue(ser_bad_create.is_valid(), ser_bad_create.errors)
+        with self.assertRaises(serializers.ValidationError) as ctx:
+            v_create.perform_create(ser_bad_create)
+        self.assertIn('property', ctx.exception.detail)
+
+        v_update = self._room_view(action='partial_update', pk=room.pk)
+        ser_bad_move = RoomSerializer(
+            room, data={'property': self.p_other.id}, partial=True, context={'request': v_update.request},
+        )
+        self.assertTrue(ser_bad_move.is_valid(), ser_bad_move.errors)
+        with self.assertRaises(serializers.ValidationError):
+            v_update.perform_update(ser_bad_move)
+
+        ser_ok_upd = RoomSerializer(
+            room, data={'rent_price': 3500000}, partial=True, context={'request': v_update.request},
+        )
+        self.assertTrue(ser_ok_upd.is_valid(), ser_ok_upd.errors)
+        v_update.perform_update(ser_ok_upd)
+        room.refresh_from_db()
+        self.assertEqual(room.rent_price, Decimal('3500000'))
+
+    def test_room_viewset_destroy_unit_blocks_active_or_linked_and_soft_or_hard_deletes(self):
+        """S2-BIZ-029 | [QLNT-290] RoomViewSet.destroy() chặn xóa phòng OCCUPIED/FULL/RESERVED/có người ở, chặn khi còn liên kết khách thuê/hợp đồng, xóa mềm sang INACTIVE khi có lịch sử bảo trì, xóa cứng khi sạch và ném Http404 khi không tồn tại | Data: 5 tình huống | Expected: 404, 400, soft_deleted=True, soft_deleted=False"""
+        from django.http import Http404
+        from services.property_service.models import Room
+
+        with self.assertRaises(Http404):
+            v_404 = self._room_view(action='destroy', pk=999999)
+            v_404.destroy(v_404.request, pk=999999)
+
+        for blocked_st in (RoomStatus.OCCUPIED, RoomStatus.FULL, RoomStatus.RESERVED):
+            r_blk = make_room(self.p1, room_number=f'B-{blocked_st}', status=blocked_st)
+            v_blk = self._room_view(action='destroy', pk=r_blk.pk)
+            res_blk = v_blk.destroy(v_blk.request, pk=r_blk.pk)
+            self.assertEqual(res_blk.status_code, status.HTTP_400_BAD_REQUEST)
+
+        r_ext = make_room(self.p1, room_number='EXT-1', status=RoomStatus.AVAILABLE)
+        v_ext = self._room_view(action='destroy', pk=r_ext.pk)
+        with mock.patch('services.property_service.views.room_external_block_reason',
+                        return_value='còn hợp đồng thuê đang hiệu lực (#10)'):
+            res_ext = v_ext.destroy(v_ext.request, pk=r_ext.pk)
+        self.assertEqual(res_ext.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('hợp đồng', res_ext.data['error'])
+
+        r_hist = make_room(self.p1, room_number='HIST-1', status=RoomStatus.AVAILABLE)
+        MaintenanceRequest.objects.create(room=r_hist, title='Đã sửa')
+        v_hist = self._room_view(action='destroy', pk=r_hist.pk)
+        with mock.patch('services.property_service.views.room_external_block_reason', return_value=None):
+            res_soft = v_hist.destroy(v_hist.request, pk=r_hist.pk)
+        self.assertEqual(res_soft.status_code, status.HTTP_200_OK)
+        self.assertTrue(res_soft.data['soft_deleted'])
+        r_hist.refresh_from_db()
+        self.assertEqual(r_hist.status, RoomStatus.INACTIVE)
+
+        r_clean = make_room(self.p1, room_number='CLEAN-1', status=RoomStatus.AVAILABLE)
+        v_clean = self._room_view(action='destroy', pk=r_clean.pk)
+        with mock.patch('services.property_service.views.room_external_block_reason', return_value=None):
+            res_hard = v_clean.destroy(v_clean.request, pk=r_clean.pk)
+        self.assertEqual(res_hard.status_code, status.HTTP_200_OK)
+        self.assertFalse(res_hard.data['soft_deleted'])
+        self.assertFalse(Room.objects.filter(pk=r_clean.pk).exists())
+
+    def test_room_viewset_update_status_and_check_rentable_unit_transitions_and_invariants(self):
+        """S2-BIZ-030 | [QLNT-294] RoomViewSet.update_status() và check_rentable() kiểm tra chuyển trạng thái hợp lệ/không hợp lệ, đồng bộ current_occupants & thông tin người thuê, và chặn đặt INACTIVE khi đang có người thuê | Data: AVAILABLE -> OCCUPIED -> FULL -> INACTIVE (chặn) -> AVAILABLE -> INACTIVE | Expected: đồng bộ chính xác, trả 400 khi vi phạm"""
+        room = make_room(self.p1, room_number='101', max_occupants=2, status=RoomStatus.AVAILABLE)
+
+        v_get = self._room_view(action='update_status', pk=room.pk, method='GET')
+        res_get = v_get.update_status(v_get.request, pk=room.pk)
+        self.assertTrue(res_get.data['is_rentable'])
+
+        v_chk = self._room_view(action='check_rentable', pk=room.pk, method='GET')
+        self.assertTrue(v_chk.check_rentable(v_chk.request, pk=room.pk).data['can_rent'])
+
+        v_bad_st = self._room_view(action='update_status', pk=room.pk, method='POST', data={'status': 'INVALID'})
+        self.assertEqual(v_bad_st.update_status(v_bad_st.request, pk=room.pk).status_code, status.HTTP_400_BAD_REQUEST)
+
+        v_bad_occ = self._room_view(
+            action='update_status', pk=room.pk, method='POST',
+            data={'status': 'RESERVED', 'current_occupants': 5},
+        )
+        self.assertEqual(v_bad_occ.update_status(v_bad_occ.request, pk=room.pk).status_code, status.HTTP_400_BAD_REQUEST)
+
+        v_occ = self._room_view(
+            action='update_status', pk=room.pk, method='POST',
+            data={'status': 'OCCUPIED', 'tenant_name': 'Nguyễn Văn A', 'tenant_phone': '0909123456'},
+        )
+        self.assertEqual(v_occ.update_status(v_occ.request, pk=room.pk).status_code, status.HTTP_200_OK)
+        room.refresh_from_db()
+        self.assertEqual((room.status, room.current_occupants, room.tenant_name), (RoomStatus.OCCUPIED, 1, 'Nguyễn Văn A'))
+
+        v_inact_blocked = self._room_view(
+            action='update_status', pk=room.pk, method='POST', data={'status': 'INACTIVE'},
+        )
+        self.assertEqual(
+            v_inact_blocked.update_status(v_inact_blocked.request, pk=room.pk).status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        v_occ_max = self._room_view(
+            action='update_status', pk=room.pk, method='POST',
+            data={'status': 'OCCUPIED', 'current_occupants': 2},
+        )
+        v_occ_max.update_status(v_occ_max.request, pk=room.pk)
+        room.refresh_from_db()
+        self.assertEqual((room.status, room.current_occupants), (RoomStatus.FULL, 2))
+
+        v_avail = self._room_view(
+            action='update_status', pk=room.pk, method='POST', data={'status': 'AVAILABLE'},
+        )
+        v_avail.update_status(v_avail.request, pk=room.pk)
+        room.refresh_from_db()
+        self.assertEqual((room.status, room.current_occupants, room.tenant_name, room.tenant_phone),
+                         (RoomStatus.AVAILABLE, 0, '', ''))
+
+        v_inact_ok = self._room_view(
+            action='update_status', pk=room.pk, method='POST', data={'status': 'INACTIVE'},
+        )
+        self.assertEqual(v_inact_ok.update_status(v_inact_ok.request, pk=room.pk).status_code, status.HTTP_200_OK)
+
+    def test_property_viewset_search_by_name_code_address_area_and_combined_filters_unit(self):
+        """S2-BIZ-031 | [QLNT-298] PropertyViewSet.get_queryset() tìm kiếm nhà trọ theo tên, mã, địa chỉ, phường, quận, thành phố (không phân biệt hoa/thường), tìm rỗng, không tìm thấy và kết hợp bộ lọc | Data: p1 (Hoa Mai, Bình Thạnh), p2 (Happy House, Quận 7) | Expected: khớp chính xác từng điều kiện"""
+        def search_codes(**params):
+            return sorted(p.code for p in self._prop_view(action='list', query_params=params).get_queryset())
+
+        self.assertEqual(search_codes(search='hoa mai'), ['NT01'])
+        self.assertEqual(search_codes(search='  NT02  '), ['NT02'])
+        self.assertEqual(search_codes(search='nguyễn gia trí'), ['NT01'])
+        self.assertEqual(search_codes(search='tân phong'), ['NT02'])
+        self.assertEqual(search_codes(search='quận 7'), ['NT02'])
+        self.assertEqual(search_codes(search='hồ chí minh'), ['NT01', 'NT02'])
+        self.assertEqual(search_codes(search=''), ['NT01', 'NT02'])
+        self.assertEqual(search_codes(search='khong-ton-tai-xyz'), [])
+        self.assertEqual(search_codes(search='hồ chí minh', status='ACTIVE', district='Bình Thạnh'), ['NT01'])
+
+    def test_room_viewset_search_filter_and_sort_queryset_unit(self):
+        """S2-BIZ-032 | [QLNT-306] RoomViewSet.get_queryset() tìm kiếm phòng theo số phòng/mã/nhà trọ/người thuê, lọc theo diện tích/giá/trạng thái/tầng/số người, kết hợp nhiều điều kiện, không có kết quả và sắp xếp | Data: 3 phòng ở p1, p2 | Expected: lọc & sắp xếp chính xác, chặn TENANT tìm theo tenant_name"""
+        r1 = make_room(
+            self.p1, room_number='A101', floor=1, area=18.0, rent_price=2500000,
+            max_occupants=2, status=RoomStatus.AVAILABLE,
+        )
+        r2 = make_room(
+            self.p1, room_number='A201', floor=2, area=28.0, rent_price=4000000,
+            max_occupants=3, status=RoomStatus.OCCUPIED, current_occupants=1, tenant_name='Trần Minh Quân',
+        )
+        make_room(
+            self.p2, room_number='B101', floor=1, area=35.0, rent_price=5500000,
+            max_occupants=4, status=RoomStatus.FULL, current_occupants=4,
+        )
+
+        def query_numbers(user=None, **params):
+            return [r.room_number for r in self._room_view(action='list', user=user, query_params=params).get_queryset()]
+
+        self.assertEqual(query_numbers(search='a101'), ['A101'])
+        self.assertEqual(query_numbers(search='nt01-a201'), ['A201'])
+        self.assertEqual(query_numbers(search='happy house'), ['B101'])
+        self.assertEqual(query_numbers(search='Trần Minh Quân'), ['A201'])
+
+        with patch_rented_rooms([r1.id, r2.id]):
+            self.assertEqual(query_numbers(user=self.tenant, search='Trần Minh Quân'), [])
+
+        self.assertEqual(query_numbers(min_area='20', max_area='30'), ['A201'])
+        self.assertEqual(query_numbers(min_price='3000000', max_price='5000000'), ['A201'])
+        self.assertEqual(query_numbers(status='available'), ['A101'])
+        self.assertEqual(query_numbers(floor='2', max_occupants='3', district='Bình Thạnh', ward='Phường 25', address='Gia Trí'), ['A201'])
+        self.assertEqual(query_numbers(search='hoa mai', status='OCCUPIED', min_price='3500000'), ['A201'])
+        self.assertEqual(query_numbers(min_price='9000000'), [])
+        self.assertEqual(query_numbers(sort='price_desc'), ['B101', 'A201', 'A101'])
+        self.assertEqual(query_numbers(sort='area_asc'), ['A101', 'A201', 'B101'])
+
+        with self.assertRaises(serializers.ValidationError):
+            self._room_view(action='list', query_params={'min_price': 'abc'}).get_queryset()

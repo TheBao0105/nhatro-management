@@ -2,14 +2,13 @@
 
 Moved from `testing/unit_tests/test_permissions.py` into `testing/api_tests/test_permissions_api.py`
 so that Pure Unit Tests and API/HTTP Tests are cleanly separated by both directory and test class.
-Contains 26 API/Security tests (`S2-SEC-009`..`S2-SEC-034`, including migrated `S2-LEG-029` & `S2-LEG-033`).
+Contains 25 API/Security tests (`S2-SEC-009`..`S2-SEC-017`, `S2-SEC-019`..`S2-SEC-034`, including migrated `S2-LEG-029` & `S2-LEG-033`; `S2-SEC-018` moved to `unit_tests/test_permissions.py`).
 """
 from datetime import timedelta
 from unittest import mock
 
 import jwt as pyjwt
 import requests
-from django.conf import settings
 from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -104,11 +103,6 @@ class JwtAuthenticationApiTests(TestCase):
         client = jwt_client(OWNER_ID, 'LANDLORD')
         self.assertEqual(client.get('/api/properties/').status_code, status.HTTP_200_OK)
         self.assertEqual(client.get(f'/api/rooms/{self.room.id}/').status_code, status.HTTP_200_OK)
-
-    def test_signing_key_is_configured(self):
-        """S2-SEC-018 | Khóa ký JWT dùng chung được cấu hình | Data: settings.SIMPLE_JWT | Expected: SIGNING_KEY khác rỗng và dùng claim user_id"""
-        self.assertTrue(settings.SIMPLE_JWT['SIGNING_KEY'])
-        self.assertEqual(settings.SIMPLE_JWT['USER_ID_CLAIM'], 'user_id')
 
 
 class RoleAccessApiTests(TestCase):

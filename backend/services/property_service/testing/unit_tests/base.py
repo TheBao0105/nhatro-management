@@ -19,6 +19,7 @@ def make_property(**overrides):
         'address': '1 Đường Test',
         'ward': 'Phường 1',
         'district': 'Quận 1',
+        'total_floors': 5,
     }
     data.update(overrides)
     return Property.objects.create(**data)

@@ -1,13 +1,15 @@
 """[PURE UNIT] Permission & Role Logic Unit Tests for Service 2.
 
 Tests `common.auth` (`get_role`, `get_user_id`, `is_admin`, `is_landlord`, `is_manager`,
-`IsManagerOrReadOnly`, `IsManagerRole`), `common.sprint.SprintFeatureLock`, and
-`services.property_service.serializers._viewer_is_manager` directly without HTTP requests.
-Total in module: 11 pure unit tests (S2-PERM-001..011).
+`IsManagerOrReadOnly`, `IsManagerRole`), `common.sprint.SprintFeatureLock`,
+`services.property_service.serializers._viewer_is_manager`, and `settings.SIMPLE_JWT`
+directly without HTTP requests.
+Total in module: 12 pure unit tests (S2-PERM-001..011, S2-SEC-018).
 """
 from types import SimpleNamespace
 from unittest import mock
 
+from django.conf import settings
 from django.test import SimpleTestCase, override_settings
 
 from common import auth
@@ -101,3 +103,8 @@ class PermissionClassUnitTests(SimpleTestCase):
         self.assertFalse(_viewer_is_manager(SimpleNamespace(context={'request': SimpleNamespace(user=fake_user(role='TENANT'))})))
         self.assertTrue(_viewer_is_manager(SimpleNamespace(context={'request': SimpleNamespace(user=fake_user(role='LANDLORD'))})))
         self.assertTrue(_viewer_is_manager(SimpleNamespace(context={'request': SimpleNamespace(user=fake_user(role='ADMIN'))})))
+
+    def test_signing_key_is_configured(self):
+        """S2-SEC-018 | Khóa ký JWT dùng chung được cấu hình | Data: settings.SIMPLE_JWT | Expected: SIGNING_KEY khác rỗng và dùng claim user_id"""
+        self.assertTrue(settings.SIMPLE_JWT['SIGNING_KEY'])
+        self.assertEqual(settings.SIMPLE_JWT['USER_ID_CLAIM'], 'user_id')

@@ -1,16 +1,21 @@
 """[API/INTEGRATION] REST API của Property & Room (Sprint 1): CRUD, đổi trạng thái, thống kê. Qua APIClient + JWT giả lập."""
 from decimal import Decimal
+from unittest import mock
 
+import requests
 from django.test import TestCase
 from rest_framework import status
 
-from common.testing import jwt_client
+from common.testing import fake_http_response, jwt_client
 from services.property_service.models import MaintenanceRequest, Property, PropertyStatus, Room, RoomStatus
 from ..unit_tests.base import OTHER_OWNER_ID, OWNER_ID, make_property, make_room
 
 
 class ApiBase(TestCase):
     def setUp(self):
+        patcher = mock.patch('common.service_client.requests.get', return_value=fake_http_response(200, []))
+        self.external_api_mock = patcher.start()
+        self.addCleanup(patcher.stop)
         self.client = jwt_client(OWNER_ID, 'LANDLORD')
         self.prop = make_property(code='NT100', name='Nhà trọ Thử Nghiệm', total_floors=2)
         self.room = make_room(self.prop, room_number='101', rent_price=3000000)
@@ -126,8 +131,10 @@ class PropertyApiTests(ApiBase):
         self.assertFalse(res.data['soft_deleted'])
         self.assertFalse(Property.objects.filter(pk=empty.pk).exists())
 
-    def test_delete_property_with_rooms_is_soft_delete(self):
-        """S2-API-016 | DELETE nhà có phòng | Data: nhà có 1 phòng AVAILABLE | Expected: 200, soft_deleted=True, status=DELETED, phòng còn nguyên"""
+    def test_delete_property_with_only_inactive_rooms_is_soft_delete(self):
+        """S2-API-016 | DELETE nhà chỉ còn phòng INACTIVE | Data: nhà có 1 phòng INACTIVE | Expected: 200, soft_deleted=True, status=DELETED, phòng còn nguyên"""
+        self.room.status = RoomStatus.INACTIVE
+        self.room.save()
         res = self.client.delete(f'/api/properties/{self.prop.id}/')
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertTrue(res.data['soft_deleted'])
@@ -152,6 +159,56 @@ class PropertyApiTests(ApiBase):
         self.room.save()
         self.assertEqual(self.client.delete(f'/api/properties/{self.prop.id}/').status_code,
                          status.HTTP_400_BAD_REQUEST)
+
+    def test_delete_property_with_active_rooms_is_blocked(self):
+        """S2-API-064 | DELETE nhà còn phòng hoạt động | Data: phòng AVAILABLE (chưa thuê) | Expected: 400 kèm 'error'; nhà vẫn ACTIVE, phòng còn nguyên"""
+        res = self.client.delete(f'/api/properties/{self.prop.id}/')
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('error', res.data)
+        self.prop.refresh_from_db()
+        self.assertEqual(self.prop.status, PropertyStatus.ACTIVE)
+        self.assertEqual(Room.objects.filter(property=self.prop).count(), 1)
+
+    def test_update_status_to_deleted_with_active_rooms_is_blocked(self):
+        """S2-API-065 | update_status=DELETED khi còn phòng hoạt động bị chặn (400), chỉ cho phép khi mọi phòng đã INACTIVE (200) | Data: phòng AVAILABLE -> INACTIVE | Expected: 400 rồi 200 DELETED"""
+        res = self.client.post(f'/api/properties/{self.prop.id}/update_status/', {'status': 'DELETED'},
+                               format='json')
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.prop.refresh_from_db()
+        self.assertEqual(self.prop.status, PropertyStatus.ACTIVE)
+
+        self.room.status = RoomStatus.INACTIVE
+        self.room.save()
+        res_ok = self.client.post(f'/api/properties/{self.prop.id}/update_status/', {'status': 'DELETED'},
+                                  format='json')
+        self.assertEqual(res_ok.status_code, status.HTTP_200_OK)
+        self.prop.refresh_from_db()
+        self.assertEqual(self.prop.status, PropertyStatus.DELETED)
+
+    def test_patch_and_put_property_status_deleted_with_active_rooms_is_blocked(self):
+        """S2-API-068 | PATCH và PUT /properties/{id}/ với status='DELETED' khi còn phòng hoạt động | Data: nhà có 1 phòng AVAILABLE | Expected: 400 (lỗi 'status'), DB giữ ACTIVE; khi phòng đã INACTIVE thì PATCH/PUT status='DELETED' thành công (200)"""
+        res_patch = self.client.patch(f'/api/properties/{self.prop.id}/', {'status': 'DELETED'}, format='json')
+        self.assertEqual(res_patch.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('status', res_patch.data)
+
+        put_payload = {
+            'name': self.prop.name,
+            'address': self.prop.address,
+            'total_floors': self.prop.total_floors,
+            'status': 'DELETED',
+        }
+        res_put = self.client.put(f'/api/properties/{self.prop.id}/', put_payload, format='json')
+        self.assertEqual(res_put.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('status', res_put.data)
+        self.prop.refresh_from_db()
+        self.assertEqual(self.prop.status, PropertyStatus.ACTIVE)
+
+        self.room.status = RoomStatus.INACTIVE
+        self.room.save()
+        res_ok = self.client.patch(f'/api/properties/{self.prop.id}/', {'status': 'DELETED'}, format='json')
+        self.assertEqual(res_ok.status_code, status.HTTP_200_OK)
+        self.prop.refresh_from_db()
+        self.assertEqual(self.prop.status, PropertyStatus.DELETED)
 
     def test_delete_nonexistent_property_returns_404(self):
         """S2-API-019 | DELETE id không tồn tại | Data: id=999999 | Expected: 404"""
@@ -251,8 +308,25 @@ class PropertyApiTests(ApiBase):
         res = self.client.get('/api/properties/summary/')
         self.assertEqual((res.data['total_properties'], res.data['total_rooms']), (1, 1))
 
+    def test_summary_total_properties_counts_only_active(self):
+        """S2-API-066 | summary.total_properties chỉ đếm nhà đang vận hành | Data: 1 ACTIVE + 1 INACTIVE + 1 DELETED | Expected: total_properties=1"""
+        make_property(code='PAUSED', status=PropertyStatus.INACTIVE)
+        make_property(code='GONE', status=PropertyStatus.DELETED)
+        res = self.client.get('/api/properties/summary/')
+        self.assertEqual(res.data['total_properties'], 1)
+
 
 class RoomApiTests(ApiBase):
+    def test_list_rooms_excludes_rooms_of_deleted_property(self):
+        """S2-API-067 | GET /api/rooms/ ẩn phòng của nhà đã xóa | Data: nhà B DELETED còn phòng AVAILABLE | Expected: 200, không có phòng của B ở list/available (không phòng mồ côi); xem chi tiết theo id vẫn 200"""
+        gone = make_property(code='GONE', status=PropertyStatus.DELETED)
+        orphan = make_room(gone, room_number='G1')
+        res = self.client.get('/api/rooms/')
+        self.assertEqual([r['room_number'] for r in res.data], ['101'])
+        res = self.client.get('/api/rooms/available/')
+        self.assertEqual([r['room_number'] for r in res.data], ['101'])
+        self.assertEqual(self.client.get(f'/api/rooms/{orphan.id}/').status_code, status.HTTP_200_OK)
+
     def test_list_rooms(self):
         """S2-API-030 | GET /api/rooms/ | Data: 1 phòng | Expected: 200, 1 phần tử có room_number/code/rent_price/status/is_rentable"""
         res = self.client.get('/api/rooms/')
@@ -366,14 +440,106 @@ class RoomApiTests(ApiBase):
         self.assertEqual(self.room.status, RoomStatus.INACTIVE)
 
     def test_delete_rented_room_is_blocked(self):
-        """S2-API-045 | DELETE phòng đang thuê | Data: OCCUPIED, FULL, hoặc có người ở | Expected: 400 'error'; phòng còn nguyên"""
-        for kwargs in ({'status': 'OCCUPIED'}, {'status': 'FULL'}, {'current_occupants': 1}):
+        """S2-API-045 | DELETE phòng đang thuê hoặc đã đặt cọc | Data: OCCUPIED, FULL, RESERVED, hoặc có người ở | Expected: 400 'error'; phòng còn nguyên"""
+        for kwargs in ({'status': 'OCCUPIED'}, {'status': 'FULL'}, {'status': 'RESERVED'}, {'current_occupants': 1}):
             with self.subTest(**kwargs):
                 room = make_room(self.prop, room_number=f"D-{sorted(kwargs.items())}", **kwargs)
                 res = self.client.delete(f'/api/rooms/{room.id}/')
                 self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
                 self.assertIn('error', res.data)
                 self.assertTrue(Room.objects.filter(pk=room.pk).exists())
+
+    def test_create_and_update_duplicate_room_number_in_same_property_returns_400(self):
+        """S2-API-069 | POST và PATCH /api/rooms/ trùng room_number trong cùng Property | Data: tạo/đổi tên phòng thành '101' hoặc '101' hoa-thường trong self.prop vs nhà trọ khác | Expected: 400 (lỗi 'room_number') khi cùng nhà; 201 khi khác nhà"""
+        res_dup = self.client.post('/api/rooms/', {
+            'property': self.prop.id,
+            'room_number': '101',
+            'rent_price': 3200000,
+        }, format='json')
+        self.assertEqual(res_dup.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('room_number', res_dup.data)
+
+        r2 = make_room(self.prop, room_number='102', rent_price=3200000)
+        res_patch_dup = self.client.patch(f'/api/rooms/{r2.id}/', {'room_number': '101'}, format='json')
+        self.assertEqual(res_patch_dup.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('room_number', res_patch_dup.data)
+        r2.refresh_from_db()
+        self.assertEqual(r2.room_number, '102')
+
+        prop2 = make_property(code='NT200', name='Nhà trọ 2')
+        res_other_prop = self.client.post('/api/rooms/', {
+            'property': prop2.id,
+            'room_number': '101',
+            'rent_price': 3200000,
+        }, format='json')
+        self.assertEqual(res_other_prop.status_code, status.HTTP_201_CREATED, res_other_prop.data)
+
+    def test_delete_room_blocked_by_external_tenant_or_contract_links(self):
+        """S2-API-070 | DELETE /api/rooms/{id}/ kiểm tra liên kết khách thuê (Tenant Service) và hợp đồng (Contract Service) | Data: phòng AVAILABLE nhưng còn tenant ACTIVE, contract ACTIVE/DRAFT/EXTENDED, lỗi kết nối 503, và trường hợp đã MOVED_OUT + TERMINATED | Expected: 400 khi còn liên kết, 503 khi mất kết nối, 200 khi đã kết thúc"""
+        self.external_api_mock.side_effect = [
+            fake_http_response(200, [{'tenant_id': 1, 'user_id': 555, 'room_id': self.room.id, 'status': 'ACTIVE'}]),
+        ]
+        res_tenant = self.client.delete(f'/api/rooms/{self.room.id}/')
+        self.assertEqual(res_tenant.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('hồ sơ khách thuê', res_tenant.data['error'])
+        self.assertTrue(Room.objects.filter(pk=self.room.pk).exists())
+
+        self.external_api_mock.side_effect = [
+            fake_http_response(200, []),
+            fake_http_response(200, [{'id': 11, 'room_id': self.room.id, 'status': 'ACTIVE'}]),
+        ]
+        res_contract = self.client.delete(f'/api/rooms/{self.room.id}/')
+        self.assertEqual(res_contract.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('hợp đồng', res_contract.data['error'])
+        self.assertTrue(Room.objects.filter(pk=self.room.pk).exists())
+
+        self.external_api_mock.side_effect = requests.exceptions.ConnectionError('down')
+        res_down = self.client.delete(f'/api/rooms/{self.room.id}/')
+        self.assertEqual(res_down.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertTrue(Room.objects.filter(pk=self.room.pk).exists())
+
+        self.external_api_mock.side_effect = [
+            fake_http_response(200, [{'tenant_id': 1, 'room_id': self.room.id, 'status': 'MOVED_OUT'}]),
+            fake_http_response(200, [{'id': 11, 'room_id': self.room.id, 'status': 'TERMINATED'}]),
+        ]
+        res_ok = self.client.delete(f'/api/rooms/{self.room.id}/')
+        self.assertEqual(res_ok.status_code, status.HTTP_200_OK)
+        self.assertFalse(Room.objects.filter(pk=self.room.pk).exists())
+
+    def test_room_business_constraints_on_deleted_property_floor_bounds_and_status_sync(self):
+        """S2-API-071 | Kiểm tra ràng buộc nghiệp vụ khi tạo/cập nhật phòng qua POST/PATCH /api/rooms/: chặn nhà trọ DELETED, chặn tầng ngoài 1..total_floors, chặn giảm total_floors nhà trọ thấp hơn tầng phòng hiện có, chặn đặt INACTIVE khi đang có khách thuê, và đồng bộ current_occupants theo status | Data: property DELETED, floor=0/5 (total_floors=2), PATCH status=OCCUPIED/INACTIVE/AVAILABLE | Expected: 400 khi vi phạm; 200 và đồng bộ đúng khi hợp lệ"""
+        gone = make_property(code='GONE-P', status=PropertyStatus.DELETED, total_floors=2)
+        res_del_prop = self.client.post('/api/rooms/', {
+            'property': gone.id, 'room_number': '101', 'rent_price': 3000000,
+        }, format='json')
+        self.assertEqual(res_del_prop.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('property', res_del_prop.data)
+
+        for bad_floor in (0, 3):
+            res_floor = self.client.post('/api/rooms/', {
+                'property': self.prop.id, 'room_number': f'F{bad_floor}', 'floor': bad_floor, 'rent_price': 3000000,
+            }, format='json')
+            self.assertEqual(res_floor.status_code, status.HTTP_400_BAD_REQUEST)
+            self.assertIn('floor', res_floor.data)
+
+        r_f2 = make_room(self.prop, room_number='201', floor=2)
+        res_shrink = self.client.patch(f'/api/properties/{self.prop.id}/', {'total_floors': 1}, format='json')
+        self.assertEqual(res_shrink.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('total_floors', res_shrink.data)
+
+        res_occ = self.client.patch(f'/api/rooms/{r_f2.id}/', {'status': 'OCCUPIED'}, format='json')
+        self.assertEqual(res_occ.status_code, status.HTTP_200_OK)
+        r_f2.refresh_from_db()
+        self.assertEqual((r_f2.status, r_f2.current_occupants), (RoomStatus.OCCUPIED, 1))
+
+        res_inact_bad = self.client.patch(f'/api/rooms/{r_f2.id}/', {'status': 'INACTIVE'}, format='json')
+        self.assertEqual(res_inact_bad.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('status', res_inact_bad.data)
+
+        res_avail = self.client.patch(f'/api/rooms/{r_f2.id}/', {'status': 'AVAILABLE'}, format='json')
+        self.assertEqual(res_avail.status_code, status.HTTP_200_OK)
+        r_f2.refresh_from_db()
+        self.assertEqual((r_f2.status, r_f2.current_occupants), (RoomStatus.AVAILABLE, 0))
 
     def test_delete_nonexistent_room_returns_404(self):
         """S2-API-046 | DELETE phòng không tồn tại | Data: id=999999 | Expected: 404"""
@@ -425,13 +591,19 @@ class RoomApiTests(ApiBase):
         self.assertEqual((self.room.tenant_name, self.room.tenant_phone), ('Trần B', '0911'))
 
     def test_set_each_valid_status(self):
-        """S2-API-053 | Chuyển tới mọi trạng thái hợp lệ | Data: 6 trạng thái | Expected: 200 và status lưu đúng (OCCUPIED có thể thành FULL nếu đủ chỗ)"""
-        for st in RoomStatus.values:
+        """S2-API-053 | Chuyển tới mọi trạng thái hợp lệ | Data: 6 trạng thái | Expected: 200 và status lưu đúng (OCCUPIED có thể thành FULL nếu đủ chỗ; INACTIVE chỉ cho phép khi phòng không đang thuê)"""
+        for st in (RoomStatus.AVAILABLE, RoomStatus.RESERVED, RoomStatus.MAINTENANCE, RoomStatus.INACTIVE,
+                   RoomStatus.OCCUPIED, RoomStatus.FULL):
             with self.subTest(status=st):
                 res = self.client.post(f'/api/rooms/{self.room.id}/status/', {'status': st}, format='json')
                 self.assertEqual(res.status_code, status.HTTP_200_OK, res.data)
                 self.room.refresh_from_db()
                 self.assertEqual(self.room.status, st)
+
+        res_blocked = self.client.post(f'/api/rooms/{self.room.id}/status/', {'status': RoomStatus.INACTIVE},
+                                       format='json')
+        self.assertEqual(res_blocked.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('error', res_blocked.data)
 
     def test_set_status_invalid_returns_400_with_allowed_list(self):
         """S2-API-054 | status không hợp lệ | Data: 'BOGUS' và thiếu | Expected: 400, có 'allowed_statuses'; DB không đổi"""

@@ -26,6 +26,8 @@ SERVICE_NAMES = {
 # Hồ sơ người thuê ở trạng thái này coi như "đang thuê" phòng room_id.
 ACTIVE_TENANT_STATUS = 'ACTIVE'
 MOVED_OUT_STATUS = 'MOVED_OUT'
+# Hợp đồng ở các trạng thái này coi như còn ràng buộc với phòng (không được xóa phòng).
+ACTIVE_CONTRACT_STATUSES = ('DRAFT', 'ACTIVE', 'EXTENDED')
 
 
 class DependencyUnavailable(APIException):
@@ -125,3 +127,38 @@ def tenant_account_eligible(auth_header, user_id):
         if isinstance(data, dict) and isinstance(data.get('eligible'), bool):
             return data['eligible']
     raise DependencyUnavailable(f'{name} không xác minh được tài khoản #{user_id} (HTTP {resp.status_code}).')
+
+
+def fetch_room_contracts(auth_header, room_id):
+    """
+    GET Contract Service /api/contracts/?room_id=<id> bằng JWT của người dùng.
+    Trả về danh sách hợp đồng gắn với phòng trong phạm vi người gọi.
+    """
+    resp, name = _get('contract', f'/api/contracts/?room_id={int(room_id)}', auth_header)
+    try:
+        data = resp.json() if resp.status_code == 200 else None
+    except ValueError:
+        data = None
+    if isinstance(data, dict) and isinstance(data.get('results'), list):
+        data = data['results']
+    if not isinstance(data, list) or not all(isinstance(i, dict) for i in data):
+        raise DependencyUnavailable(f'{name} trả về dữ liệu hợp đồng không hợp lệ (HTTP {resp.status_code}).')
+    return data
+
+
+def room_external_block_reason(user, room_id):
+    """
+    Kiểm tra liên kết từ Tenant Service và Contract Service trước khi xóa phòng:
+    - Có hồ sơ người thuê đang gắn với phòng (status != MOVED_OUT) -> chặn xóa.
+    - Có hợp đồng còn hiệu lực hoặc bản nháp (DRAFT, ACTIVE, EXTENDED) -> chặn xóa.
+    Trả về chuỗi lý do nếu phải chặn, hoặc None nếu không còn liên kết đang hoạt động.
+    """
+    rid = int(room_id)
+    for link in tenant_links_for_user(user):
+        if link.get('room_id') == rid and link.get('status') != MOVED_OUT_STATUS:
+            return 'đang có hồ sơ khách thuê liên kết'
+    auth_header = auth_header_from_user(user)
+    for contract in fetch_room_contracts(auth_header, rid):
+        if contract.get('room_id') in (None, rid) and contract.get('status') in ACTIVE_CONTRACT_STATUSES:
+            return 'đang có hợp đồng thuê còn hiệu lực'
+    return None

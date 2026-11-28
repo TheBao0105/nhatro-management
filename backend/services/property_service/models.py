@@ -32,7 +32,9 @@ class Property(models.Model):
     ward = models.CharField(max_length=100, blank=True, default='', verbose_name='Phường / Xã')
     district = models.CharField(max_length=100, blank=True, default='', db_index=True, verbose_name='Quận / Huyện (Khu vực)')
     city = models.CharField(max_length=100, default='TP. Hồ Chí Minh', verbose_name='Tỉnh / Thành phố')
-    total_floors = models.PositiveIntegerField(default=1, verbose_name='Số tầng')
+    total_floors = models.PositiveIntegerField(
+        default=1, validators=[MinValueValidator(1)], verbose_name='Số tầng',
+    )
 
     electricity_rate = models.DecimalField(
         max_digits=12, decimal_places=0, default=3500,
@@ -192,8 +194,12 @@ class Room(models.Model):
     description = models.TextField(blank=True, default='', verbose_name='Mô tả chi tiết')
 
     # Chỉ số công tơ ban đầu (Billing Service dùng làm chỉ số cũ cho hóa đơn đầu tiên).
-    initial_electric_reading = models.FloatField(default=0.0, verbose_name='Chỉ số điện ban đầu')
-    initial_water_reading = models.FloatField(default=0.0, verbose_name='Chỉ số nước ban đầu')
+    initial_electric_reading = models.FloatField(
+        default=0.0, validators=[MinValueValidator(0.0)], verbose_name='Chỉ số điện ban đầu',
+    )
+    initial_water_reading = models.FloatField(
+        default=0.0, validators=[MinValueValidator(0.0)], verbose_name='Chỉ số nước ban đầu',
+    )
 
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Ngày tạo')
     updated_at = models.DateTimeField(auto_now=True)
@@ -202,6 +208,12 @@ class Room(models.Model):
         verbose_name = 'Phòng trọ'
         verbose_name_plural = 'Danh sách Phòng trọ'
         ordering = ['property', 'floor', 'room_number']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['property', 'room_number'],
+                name='unique_room_number_per_property',
+            ),
+        ]
 
     @builtins.property
     def is_rentable(self):
@@ -294,10 +306,12 @@ class MaintenanceRequest(models.Model):
     )
 
     estimated_cost = models.DecimalField(
-        max_digits=12, decimal_places=0, default=0, verbose_name='Chi phí dự kiến (VNĐ)'
+        max_digits=12, decimal_places=0, default=0,
+        validators=[MinValueValidator(0)], verbose_name='Chi phí dự kiến (VNĐ)',
     )
     actual_cost = models.DecimalField(
-        max_digits=12, decimal_places=0, default=0, verbose_name='Chi phí thực tế (VNĐ)'
+        max_digits=12, decimal_places=0, default=0,
+        validators=[MinValueValidator(0)], verbose_name='Chi phí thực tế (VNĐ)',
     )
 
     reported_by = models.CharField(max_length=150, blank=True, default='Chủ trọ / Quản lý', verbose_name='Người báo cáo')

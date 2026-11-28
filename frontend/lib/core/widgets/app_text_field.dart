@@ -58,7 +58,9 @@ class AppTextField extends StatelessWidget {
           maxLines: obscureText ? 1 : maxLines,
           obscureText: obscureText,
           style: AppTypography.body,
-          keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+          keyboardType: isNumber
+              ? const TextInputType.numberWithOptions(decimal: true, signed: true)
+              : TextInputType.text,
           decoration: InputDecoration(hintText: hint),
           validator: validator ??
               (value) {
